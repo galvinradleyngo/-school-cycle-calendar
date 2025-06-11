@@ -66,7 +66,7 @@
 <body class="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
     <!-- 🔥 REPLACE WITH YOUR FIREBASE CONFIG -->
     <script>
-       const firebaseConfig = {
+        const firebaseConfig = {
   apiKey: "AIzaSyCi7jkj_qUfRpvdw4LBo3S-P1OGjt3ICLY",
   authDomain: "school-calendar-f6b5d.firebaseapp.com",
   projectId: "school-calendar-f6b5d",
@@ -74,6 +74,7 @@
   messagingSenderId: "151199046645",
   appId: "1:151199046645:web:67ae312ad035227023debc"
 };
+
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
@@ -314,7 +315,7 @@
                     if (doc.exists) {
                         customCycleDays = doc.data() || {};
                         updateSyncStatus(true);
-                        renderCalendar();
+                        renderCalendar(); // This will update colors based on new cycle calculations
                         updateTodayBanner();
                     }
                 }, (error) => {
@@ -425,8 +426,33 @@
             const june18 = new Date(2025, 5, 18);
             if (date < june18) return 0;
             
-            const schoolDaysSinceStart = getSchoolDaysSince(june18, date);
-            return Math.floor(schoolDaysSinceStart / 7) + 1;
+            // Calculate cycle number based on the actual sequence of cycle days
+            // Count how many complete cycles have occurred before this date
+            let cycleCount = 1;
+            let currentCheckDate = new Date(june18);
+            let consecutiveDays = 0;
+            
+            while (currentCheckDate < date) {
+                if (isSchoolDay(currentCheckDate)) {
+                    const checkCycleDay = getEffectiveCycleDay(currentCheckDate);
+                    
+                    if (checkCycleDay === 0) {
+                        // Day 0 resets the count but doesn't increment cycle
+                        consecutiveDays = 0;
+                    } else {
+                        consecutiveDays++;
+                        
+                        // If we've completed a 7-day cycle, increment cycle number
+                        if (consecutiveDays > 7) {
+                            consecutiveDays = 1;
+                            cycleCount++;
+                        }
+                    }
+                }
+                currentCheckDate.setDate(currentCheckDate.getDate() + 1);
+            }
+            
+            return cycleCount;
         }
 
         function getDaysInMonth(month, year) {
@@ -552,6 +578,11 @@
                     }
                 }
             }
+            
+            // Update local state immediately for instant visual feedback
+            customCycleDays = newCustomDays;
+            renderCalendar();
+            updateTodayBanner();
             
             // Save to Firebase
             await saveToFirebase(newCustomDays);
