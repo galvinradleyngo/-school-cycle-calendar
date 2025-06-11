@@ -9,9 +9,35 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     <style>
-        /* Prevent double-tap zoom on mobile */
-        * {
+        /* Prevent double-tap zoom on mobile - comprehensive CSS */
+        html {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
             touch-action: manipulation;
+        }
+        
+        body {
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        /* Allow text selection for specific elements */
+        .allow-select {
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
+        }
+        
+        /* Prevent double-tap zoom on buttons and interactive elements */
+        button, .cycle-button, [onclick] {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
         
         .slot-machine-option {
@@ -40,7 +66,7 @@
 <body class="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
     <!-- 🔥 REPLACE WITH YOUR FIREBASE CONFIG -->
     <script>
-        const firebaseConfig = {
+     const firebaseConfig = {
   apiKey: "AIzaSyCi7jkj_qUfRpvdw4LBo3S-P1OGjt3ICLY",
   authDomain: "school-calendar-f6b5d.firebaseapp.com",
   projectId: "school-calendar-f6b5d",
@@ -48,6 +74,7 @@
   messagingSenderId: "151199046645",
   appId: "1:151199046645:web:67ae312ad035227023debc"
 };
+
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
@@ -221,6 +248,30 @@
     </div>
 
     <script>
+        // Prevent double-tap zoom on mobile - comprehensive fix
+        document.addEventListener('touchend', function (event) {
+            var now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+
+        var lastTouchEnd = 0;
+
+        // Also prevent zoom with CSS and additional touch handling
+        document.addEventListener('gesturestart', function (e) {
+            e.preventDefault();
+        });
+
+        document.addEventListener('gesturechange', function (e) {
+            e.preventDefault();
+        });
+
+        document.addEventListener('gestureend', function (e) {
+            e.preventDefault();
+        });
+
         // Global state
         let currentDate = new Date();
         let currentMonth = 5; // June (0-indexed)
