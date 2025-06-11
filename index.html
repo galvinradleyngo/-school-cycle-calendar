@@ -74,7 +74,6 @@
   messagingSenderId: "151199046645",
   appId: "1:151199046645:web:67ae312ad035227023debc"
 };
-
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
@@ -703,9 +702,25 @@
                 grid.appendChild(dayCell);
             }
 
-            // Update navigation buttons
-            document.getElementById('prevMonth').disabled = currentYear === 2025 && currentMonth === 5;
-            document.getElementById('nextMonth').disabled = currentYear === 2026 && currentMonth === 2;
+            // Update navigation buttons - remove artificial limits
+            const prevButton = document.getElementById('prevMonth');
+            const nextButton = document.getElementById('nextMonth');
+            
+            // Allow unlimited navigation but add visual cues for school year range
+            prevButton.disabled = false;
+            nextButton.disabled = false;
+            
+            // Add visual indication if we're outside the main school year
+            const isInSchoolYear = (currentYear === 2025 && currentMonth >= 5) || 
+                                 (currentYear === 2026 && currentMonth <= 2);
+            
+            if (!isInSchoolYear) {
+                document.getElementById('monthYear').style.opacity = '0.6';
+                document.getElementById('monthYear').title = 'Outside main school year (June 2025 - March 2026)';
+            } else {
+                document.getElementById('monthYear').style.opacity = '1';
+                document.getElementById('monthYear').title = '';
+            }
         }
 
         // Event listeners
@@ -732,6 +747,11 @@
 
         // Initialize
         function init() {
+            // Set current month to actual current month
+            const today = new Date();
+            currentMonth = today.getMonth();
+            currentYear = today.getFullYear();
+            
             // Update current date every minute
             setInterval(() => {
                 currentDate = new Date();
