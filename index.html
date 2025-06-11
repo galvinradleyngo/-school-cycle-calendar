@@ -9,31 +9,13 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        // 🔥 REPLACE WITH YOUR FIREBASE CONFIG
-       const firebaseConfig = {
-  apiKey: "AIzaSyCi7jkj_qUfRpvdw4LBo3S-P1OGjt3ICLY",
-  authDomain: "school-calendar-f6b5d.firebaseapp.com",
-  projectId: "school-calendar-f6b5d",
-  storageBucket: "school-calendar-f6b5d.firebasestorage.app",
-  messagingSenderId: "151199046645",
-  appId: "1:151199046645:web:67ae312ad035227023debc"
-};
-
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-
         const { useState, useEffect } = React;
-        const { ChevronLeft, ChevronRight, Calendar, ChevronUp, ChevronDown, Wifi, WifiOff } = lucideReact;
+        const { ChevronLeft, ChevronRight, Calendar, ChevronUp, ChevronDown, CheckCircle } = lucideReact;
 
         const SlotMachineModal = ({ value, onChange, onClose, isVisible }) => {
           const [selectedValue, setSelectedValue] = useState(value);
@@ -162,8 +144,6 @@
           const [customCycleDays, setCustomCycleDays] = useState({});
           const [activeDropdown, setActiveDropdown] = useState(null);
           const [currentDate, setCurrentDate] = useState(new Date());
-          const [isOnline, setIsOnline] = useState(true);
-          const [lastSyncTime, setLastSyncTime] = useState(new Date());
 
           // Philippine holidays for school year 2025-2026
           const philippineHolidays = [
@@ -171,23 +151,6 @@
             '2025-11-30', '2025-12-25', '2025-12-30', '2025-12-31', '2026-01-01',
             '2026-02-25', '2026-04-09', '2026-04-17', '2026-04-18', '2026-04-19'
           ];
-
-          // 🔥 Firebase Real-Time Sync
-          useEffect(() => {
-            const unsubscribe = db.collection('calendar').doc('cycleDays')
-              .onSnapshot((doc) => {
-                if (doc.exists) {
-                  setCustomCycleDays(doc.data() || {});
-                  setLastSyncTime(new Date());
-                  setIsOnline(true);
-                }
-              }, (error) => {
-                console.error('Firebase sync error:', error);
-                setIsOnline(false);
-              });
-
-            return () => unsubscribe();
-          }, []);
 
           // Update current date every minute
           useEffect(() => {
@@ -240,18 +203,7 @@
             return !isWeekend(date) && !isHoliday(dateString);
           };
 
-          // 🔥 Save to Firebase
-          const saveToFirebase = async (newCustomDays) => {
-            try {
-              await db.collection('calendar').doc('cycleDays').set(newCustomDays);
-              setIsOnline(true);
-            } catch (error) {
-              console.error('Error saving to Firebase:', error);
-              setIsOnline(false);
-            }
-          };
-
-          const handleCycleDayChange = async (dateString, newCycleDay) => {
+          const handleCycleDayChange = (dateString, newCycleDay) => {
             const newCustomDays = { ...customCycleDays };
             
             if (newCycleDay === 0) {
@@ -322,8 +274,7 @@
               }
             }
             
-            // Save to Firebase
-            await saveToFirebase(newCustomDays);
+            setCustomCycleDays(newCustomDays);
             setActiveDropdown(null);
           };
 
@@ -483,20 +434,13 @@
             return currentDate.toLocaleDateString('en-US', options);
           };
 
-          const formatSyncTime = () => {
-            return lastSyncTime.toLocaleTimeString('en-US', { 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            });
-          };
-
           return React.createElement('div', {
             className: "min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4"
           },
             React.createElement('div', {
               className: "max-w-4xl mx-auto"
             },
-              // Header with sync status
+              // Header with test status
               React.createElement('div', {
                 className: "bg-white rounded-2xl shadow-xl p-6 mb-6"
               },
@@ -504,16 +448,12 @@
                   className: "flex items-center justify-between mb-4"
                 },
                   React.createElement('div', {
-                    className: `flex items-center space-x-2 px-3 py-1 rounded-full text-sm ${
-                      isOnline ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`
+                    className: "flex items-center space-x-2 px-3 py-1 rounded-full text-sm bg-green-100 text-green-700"
                   },
-                    React.createElement(isOnline ? Wifi : WifiOff, { 
+                    React.createElement(CheckCircle, { 
                       className: "w-4 h-4" 
                     }),
-                    React.createElement('span', {}, 
-                      isOnline ? `Synced ${formatSyncTime()}` : 'Offline'
-                    )
+                    React.createElement('span', {}, "Calendar Working - Test Mode")
                   )
                 ),
                 React.createElement('div', {
@@ -679,8 +619,8 @@
                   className: "text-xs text-gray-600"
                 },
                   React.createElement('p', {},
-                    React.createElement('strong', {}, "Real-time sync: "),
-                    "Changes are instantly visible to all users. Look for the sync status in the top-right."
+                    React.createElement('strong', {}, "TEST MODE: "),
+                    "Changes work but don't sync between users or persist after refresh."
                   ),
                   React.createElement('p', {},
                     React.createElement('strong', {}, "Click any cycle number"),
