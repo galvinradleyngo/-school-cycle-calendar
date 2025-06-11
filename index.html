@@ -2,13 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>School Cycle Calendar</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     <style>
+        /* Prevent double-tap zoom on mobile */
+        * {
+            touch-action: manipulation;
+        }
+        
         .slot-machine-option {
             transition: all 0.3s ease;
         }
@@ -43,7 +48,6 @@
   messagingSenderId: "151199046645",
   appId: "1:151199046645:web:67ae312ad035227023debc"
 };
-
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
