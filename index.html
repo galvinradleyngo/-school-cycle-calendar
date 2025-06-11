@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>School Cycle Calendar</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Firebase SDK -->
@@ -66,7 +66,7 @@
 <body class="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
     <!-- 🔥 REPLACE WITH YOUR FIREBASE CONFIG -->
     <script>
-     const firebaseConfig = {
+       const firebaseConfig = {
   apiKey: "AIzaSyCi7jkj_qUfRpvdw4LBo3S-P1OGjt3ICLY",
   authDomain: "school-calendar-f6b5d.firebaseapp.com",
   projectId: "school-calendar-f6b5d",
@@ -248,29 +248,34 @@
     </div>
 
     <script>
-        // Prevent double-tap zoom on mobile - comprehensive fix
+        // Prevent double-tap zoom - simplified and more aggressive approach
+        let lastTouchEnd = 0;
+        
         document.addEventListener('touchend', function (event) {
-            var now = (new Date()).getTime();
+            const now = Date.now();
             if (now - lastTouchEnd <= 300) {
                 event.preventDefault();
             }
             lastTouchEnd = now;
-        }, false);
+        }, { passive: false });
 
-        var lastTouchEnd = 0;
-
-        // Also prevent zoom with CSS and additional touch handling
+        // Prevent all gestures
         document.addEventListener('gesturestart', function (e) {
             e.preventDefault();
-        });
+        }, { passive: false });
 
         document.addEventListener('gesturechange', function (e) {
             e.preventDefault();
-        });
+        }, { passive: false });
 
         document.addEventListener('gestureend', function (e) {
             e.preventDefault();
-        });
+        }, { passive: false });
+
+        // Prevent context menu on long press
+        document.addEventListener('contextmenu', function (e) {
+            e.preventDefault();
+        }, { passive: false });
 
         // Global state
         let currentDate = new Date();
@@ -660,7 +665,28 @@
                     cycleButton.textContent = cycleDay === 0 ? '0' : cycleDay;
 
                     if (!isPast) {
-                        cycleButton.onclick = () => openModal(dateString, cycleDay);
+                        cycleButton.onclick = (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openModal(dateString, cycleDay);
+                        };
+                        
+                        // Add touch event handlers to prevent zoom
+                        let touchStartTime = 0;
+                        
+                        cycleButton.addEventListener('touchstart', (e) => {
+                            touchStartTime = Date.now();
+                        }, { passive: false });
+                        
+                        cycleButton.addEventListener('touchend', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            const touchDuration = Date.now() - touchStartTime;
+                            if (touchDuration < 200) { // Quick tap
+                                openModal(dateString, cycleDay);
+                            }
+                        }, { passive: false });
                     }
 
                     cycleContainer.appendChild(cycleButton);
