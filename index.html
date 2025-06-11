@@ -426,8 +426,8 @@
             const june18 = new Date(2025, 5, 18);
             if (date < june18) return 0;
             
-            // Calculate cycle number based on groups of 7 consecutive school days
-            // Find all school days from June 18 to this date
+            // Simple approach: look at the actual cycle day pattern to determine cycle
+            // Find all school days and their cycle days from start to this date
             const schoolDays = [];
             let currentCheckDate = new Date(june18);
             
@@ -444,33 +444,35 @@
                 currentCheckDate.setDate(currentCheckDate.getDate() + 1);
             }
             
-            // Group into cycles, starting new cycle after day 7 or after day 0
-            let currentCycle = 1;
-            let daysInCurrentCycle = 0;
+            // Count cycles by looking for when day numbers reset or start a new sequence
+            let cycleNumber = 1;
+            let lastNonZeroDay = 0;
             
             for (let i = 0; i < schoolDays.length; i++) {
                 const day = schoolDays[i];
                 
                 if (day.cycleDay === 0) {
-                    // Day 0 doesn't belong to any cycle, but next day starts a new cycle
-                    daysInCurrentCycle = 0;
+                    lastNonZeroDay = 0; // Reset for next cycle
+                    if (formatDateString(day.date) === formatDateString(date)) {
+                        return 0;
+                    }
                     continue;
                 }
                 
-                daysInCurrentCycle++;
-                
-                if (formatDateString(day.date) === formatDateString(date)) {
-                    return currentCycle;
+                // If current day is 1 and we had a previous day (not the very first day)
+                // and the previous day wasn't 0, then we're starting a new cycle
+                if (day.cycleDay === 1 && lastNonZeroDay > 0 && lastNonZeroDay !== 0) {
+                    cycleNumber++;
                 }
                 
-                // After day 7, start a new cycle
-                if (daysInCurrentCycle === 7) {
-                    currentCycle++;
-                    daysInCurrentCycle = 0;
+                lastNonZeroDay = day.cycleDay;
+                
+                if (formatDateString(day.date) === formatDateString(date)) {
+                    return cycleNumber;
                 }
             }
             
-            return currentCycle;
+            return cycleNumber;
         }
 
         function getDaysInMonth(month, year) {
