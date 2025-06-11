@@ -66,7 +66,7 @@
 <body class="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
     <!-- 🔥 REPLACE WITH YOUR FIREBASE CONFIG -->
     <script>
-        const firebaseConfig = {
+       const firebaseConfig = {
   apiKey: "AIzaSyCi7jkj_qUfRpvdw4LBo3S-P1OGjt3ICLY",
   authDomain: "school-calendar-f6b5d.firebaseapp.com",
   projectId: "school-calendar-f6b5d",
@@ -426,33 +426,51 @@
             const june18 = new Date(2025, 5, 18);
             if (date < june18) return 0;
             
-            // Calculate cycle number based on the actual sequence of cycle days
-            // Count how many complete cycles have occurred before this date
-            let cycleCount = 1;
+            // Calculate cycle number based on groups of 7 consecutive school days
+            // Find all school days from June 18 to this date
+            const schoolDays = [];
             let currentCheckDate = new Date(june18);
-            let consecutiveDays = 0;
             
-            while (currentCheckDate < date) {
+            while (currentCheckDate <= date) {
                 if (isSchoolDay(currentCheckDate)) {
+                    const checkDateString = formatDateString(currentCheckDate);
                     const checkCycleDay = getEffectiveCycleDay(currentCheckDate);
-                    
-                    if (checkCycleDay === 0) {
-                        // Day 0 resets the count but doesn't increment cycle
-                        consecutiveDays = 0;
-                    } else {
-                        consecutiveDays++;
-                        
-                        // If we've completed a 7-day cycle, increment cycle number
-                        if (consecutiveDays > 7) {
-                            consecutiveDays = 1;
-                            cycleCount++;
-                        }
-                    }
+                    schoolDays.push({
+                        date: new Date(currentCheckDate),
+                        dateString: checkDateString,
+                        cycleDay: checkCycleDay
+                    });
                 }
                 currentCheckDate.setDate(currentCheckDate.getDate() + 1);
             }
             
-            return cycleCount;
+            // Group into cycles, starting new cycle after day 7 or after day 0
+            let currentCycle = 1;
+            let daysInCurrentCycle = 0;
+            
+            for (let i = 0; i < schoolDays.length; i++) {
+                const day = schoolDays[i];
+                
+                if (day.cycleDay === 0) {
+                    // Day 0 doesn't belong to any cycle, but next day starts a new cycle
+                    daysInCurrentCycle = 0;
+                    continue;
+                }
+                
+                daysInCurrentCycle++;
+                
+                if (formatDateString(day.date) === formatDateString(date)) {
+                    return currentCycle;
+                }
+                
+                // After day 7, start a new cycle
+                if (daysInCurrentCycle === 7) {
+                    currentCycle++;
+                    daysInCurrentCycle = 0;
+                }
+            }
+            
+            return currentCycle;
         }
 
         function getDaysInMonth(month, year) {
