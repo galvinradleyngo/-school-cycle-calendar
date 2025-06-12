@@ -66,7 +66,7 @@
 <body class="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
     <!-- 🔥 REPLACE WITH YOUR FIREBASE CONFIG -->
     <script>
-       const firebaseConfig = {
+        const firebaseConfig = {
   apiKey: "AIzaSyCi7jkj_qUfRpvdw4LBo3S-P1OGjt3ICLY",
   authDomain: "school-calendar-f6b5d.firebaseapp.com",
   projectId: "school-calendar-f6b5d",
@@ -74,6 +74,7 @@
   messagingSenderId: "151199046645",
   appId: "1:151199046645:web:67ae312ad035227023debc"
 };
+
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
@@ -173,7 +174,13 @@
                         <div class="w-4 h-4 bg-red-50 relative rounded">
                             <div class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></div>
                         </div>
-                        <span>Holidays</span>
+                        <span>Public Holidays</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-4 h-4 bg-gray-100 relative rounded">
+                            <div class="absolute top-0 left-0 w-2 h-2 bg-orange-500 rounded-full"></div>
+                        </div>
+                        <span>School Breaks</span>
                     </div>
                 </div>
                 
@@ -195,6 +202,8 @@
                     <p><strong>Click any cycle number</strong> (future dates only) to adjust it. Changes will automatically update all following days.</p>
                     <p><strong>Past dates</strong> are greyed out and cannot be modified.</p>
                     <p><strong>Day 0:</strong> Non-cycle school days. Next school day after Day 0 becomes Day 1.</p>
+                    <p><strong>Default:</strong> First cycle begins Wednesday, June 18, 2025. Days before are Day 0.</p>
+                    <p><strong>Red dots:</strong> Public holidays. <strong>Orange dots:</strong> School breaks (no cycle days).</p>
                 </div>
             </div>
         </div>
@@ -285,11 +294,25 @@
         let activeModalDate = null;
         let isOnline = true;
 
-        // Philippine holidays
+        // Philippine holidays and school breaks
         const philippineHolidays = [
             '2025-06-12', '2025-08-21', '2025-08-26', '2025-11-01', '2025-11-02',
             '2025-11-30', '2025-12-25', '2025-12-30', '2025-12-31', '2026-01-01',
             '2026-02-25', '2026-04-09', '2026-04-17', '2026-04-18', '2026-04-19'
+        ];
+
+        // School breaks (no cycle days)
+        const schoolBreaks = [
+            // September 15-16, 2025
+            '2025-09-15', '2025-09-16',
+            // October 27-31, 2025
+            '2025-10-27', '2025-10-28', '2025-10-29', '2025-10-30', '2025-10-31',
+            // November 3, 2025
+            '2025-11-03',
+            // December 22, 2025 to January 5, 2026
+            '2025-12-22', '2025-12-23', '2025-12-24', '2025-12-26', '2025-12-27',
+            '2025-12-28', '2025-12-29', '2026-01-02', '2026-01-03', '2026-01-04',
+            '2026-01-05'
         ];
 
         const months = [
@@ -375,9 +398,13 @@
             return philippineHolidays.includes(dateString);
         }
 
+        function isSchoolBreak(dateString) {
+            return schoolBreaks.includes(dateString);
+        }
+
         function isSchoolDay(date) {
             const dateString = formatDateString(date);
-            return !isWeekend(date) && !isHoliday(dateString);
+            return !isWeekend(date) && !isHoliday(dateString) && !isSchoolBreak(dateString);
         }
 
         function formatDateString(date) {
@@ -742,11 +769,19 @@
                     dayCell.appendChild(cycleContainer);
                 }
 
-                // Holiday indicator
+                // Holiday and school break indicators
                 if (isHoliday(dateString) && !isWeekend(date)) {
                     const holidayDot = document.createElement('div');
                     holidayDot.className = 'absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full';
+                    holidayDot.title = 'Public Holiday';
                     dayCell.appendChild(holidayDot);
+                }
+                
+                if (isSchoolBreak(dateString) && !isWeekend(date)) {
+                    const breakDot = document.createElement('div');
+                    breakDot.className = 'absolute top-1 left-1 w-2 h-2 bg-orange-500 rounded-full';
+                    breakDot.title = 'School Break';
+                    dayCell.appendChild(breakDot);
                 }
 
                 grid.appendChild(dayCell);
