@@ -264,12 +264,34 @@
                 subjectCell.style.whiteSpace = 'pre-line';
                 subjectCell.textContent = subject;
                 
-                // Apply subject color
-                const color = subjectColors[subject];
-                if (color) {
-                    subjectCell.style.backgroundColor = color;
-                    subjectCell.style.color = color === '#696969' ? 'white' : 'black';
+                // Apply color based on time period and subject
+                let backgroundColor = '#FFFFFF'; // Default white
+                let textColor = 'black';
+                
+                // Chinese is always blue regardless of time
+                if (subject === 'CHINESE') {
+                    backgroundColor = '#4169E1'; // Blue
+                    textColor = 'white';
                 }
+                // 8:10-9:30 AM periods = Orange
+                else if (time.includes('8:10-8:50') || time.includes('8:50-9:30')) {
+                    backgroundColor = '#FFA500'; // Orange
+                }
+                // Breaks = Gray
+                else if (time.includes('9:30-10:10') || time.includes('12:10-12:50')) {
+                    backgroundColor = '#D3D3D3'; // Light Gray
+                }
+                // 10:10-12:10 PM periods = Green  
+                else if (time.includes('10:10-10:50') || time.includes('10:50-11:30') || time.includes('11:30-12:10')) {
+                    backgroundColor = '#90EE90'; // Light Green
+                }
+                // 12:50-2:50 PM periods = Purple
+                else if (time.includes('12:50-1:30') || time.includes('1:30-2:10') || time.includes('1:30-2:50')) {
+                    backgroundColor = '#DDA0DD'; // Plum
+                }
+                
+                subjectCell.style.backgroundColor = backgroundColor;
+                subjectCell.style.color = textColor;
                 
                 row.appendChild(timeCell);
                 row.appendChild(subjectCell);
