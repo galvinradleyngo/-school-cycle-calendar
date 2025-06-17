@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>School Cycle Calendar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <style>
+        /* Prevent double-tap zoom on mobile - comprehensive CSS */
+        html {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+            touch-action: manipulation;
+        }
+        
+        body {
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        /* Allow text selection for specific elements */
+        .allow-select {
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
+        }
+        
+        /* Prevent double-tap zoom on buttons and interactive elements */
+        button, .cycle-button, [onclick] {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .slot-machine-option {
+            transition: all 0.3s ease;
+        }
+        .slot-machine-selected {
+            transform: scale(1.25);
+            color: #2563eb;
+            background: #dbeafe;
+            border-radius: 8px;
+            border: 2px solid #3b82f6;
+        }
+        .slot-machine-unselected {
+            transform: scale(0.75);
+            color: #9ca3af;
+        }
+        .cycle-button {
+            transition: all 0.2s ease;
+        }
+        .cycle-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
+    <!-- 🔥 REPLACE WITH YOUR FIREBASE CONFIG -->
+    <script>
+        // Class schedule data based on cycle days
+        const classSchedule = {
+            1: {
+                "8:10-8:50 AM\n1ST PERIOD": "ADVISORY\nPERIOD",
+                "8:50-9:30 AM\n2ND PERIOD": "MUSIC /\nARTS",
+                "9:30-10:10 AM": "HEALTH BREAK - RECESS",
+                "10:10-10:50 AM\n3RD PERIOD": "READING",
+                "10:50-11:30 AM\n4TH PERIOD": "LANGUAGE",
+                "11:30-12:10 PM\n5TH PERIOD": "MATH",
+                "12:10-12:50 PM": "HEALTH BREAK - LUNCH",
+                "12:50-1:30 PM\n6TH PERIOD": "SOCIAL\nSTUDIES",
+                "1:30-2:10 PM\n7TH PERIOD": "FILIPINO",
+                "1:30-2:50 PM\n8TH PERIOD": "SCIENCE"
+            },
+            2: {
+                "8:10-8:50 AM\n1ST PERIOD": "CHINESE",
+                "8:50-9:30 AM\n2ND PERIOD": "CLE",
+                "9:30-10:10 AM": "HEALTH BREAK - RECESS",
+                "10:10-10:50 AM\n3RD PERIOD": "FILIPINO",
+                "10:50-11:30 AM\n4TH PERIOD": "P.E.",
+                "11:30-12:10 PM\n5TH PERIOD": "SOCIAL\nSTUDIES",
+                "12:10-12:50 PM": "HEALTH BREAK - LUNCH",
+                "12:50-1:30 PM\n6TH PERIOD": "MATH",
+                "1:30-2:10 PM\n7TH PERIOD": "MATH",
+                "1:30-2:50 PM\n8TH PERIOD": "SCIENCE"
+            },
+            3: {
+                "8:10-8:50 AM\n1ST PERIOD": "MATH",
+                "8:50-9:30 AM\n2ND PERIOD": "MATH",
+                "9:30-10:10 AM": "HEALTH BREAK - RECESS",
+                "10:10-10:50 AM\n3RD PERIOD": "FILIPINO",
+                "10:50-11:30 AM\n4TH PERIOD": "LANGUAGE",
+                "11:30-12:10 PM\n5TH PERIOD": "LANGUAGE",
+                "12:10-12:50 PM": "HEALTH BREAK - LUNCH",
+                "12:50-1:30 PM\n6TH PERIOD": "SOCIAL\nSTUDIES",
+                "1:30-2:10 PM\n7TH PERIOD": "READING",
+                "1:30-2:50 PM\n8TH PERIOD": "CHINESE"
+            },
+            4: {
+                "8:10-8:50 AM\n1ST PERIOD": "SOCIAL\nSTUDIES",
+                "8:50-9:30 AM\n2ND PERIOD": "FILIPINO",
+                "9:30-10:10 AM": "HEALTH BREAK - RECESS",
+                "10:10-10:50 AM\n3RD PERIOD": "CHINESE",
+                "10:50-11:30 AM\n4TH PERIOD": "SCIENCE",
+                "11:30-12:10 PM\n5TH PERIOD": "CLE",
+                "12:10-12:50 PM": "HEALTH BREAK - LUNCH",
+                "12:50-1:30 PM\n6TH PERIOD": "COMPUTER",
+                "1:30-2:10 PM\n7TH PERIOD": "MUSIC /\nARTS",
+                "1:30-2:50 PM\n8TH PERIOD": "KAB"
+            },
+            5: {
+                "8:10-8:50 AM\n1ST PERIOD": "CLE",
+                "8:50-9:30 AM\n2ND PERIOD": "CHINESE",
+                "9:30-10:10 AM": "HEALTH BREAK - RECESS",
+                "10:10-10:50 AM\n3RD PERIOD": "CARESO",
+                "10:50-11:30 AM\n4TH PERIOD": "P.E.",
+                "11:30-12:10 PM\n5TH PERIOD": "FILIPINO",
+                "12:10-12:50 PM": "HEALTH BREAK - LUNCH",
+                "12:50-1:30 PM\n6TH PERIOD": "COMPUTER",
+                "1:30-2:10 PM\n7TH PERIOD": "SOCIAL\nSTUDIES",
+                "1:30-2:50 PM\n8TH PERIOD": "STUDY HALL"
+            },
+            6: {
+                "8:10-8:50 AM\n1ST PERIOD": "READING",
+                "8:50-9:30 AM\n2ND PERIOD": "READING",
+                "9:30-10:10 AM": "HEALTH BREAK - RECESS",
+                "10:10-10:50 AM\n3RD PERIOD": "LANGUAGE",
+                "10:50-11:30 AM\n4TH PERIOD": "LANGUAGE",
+                "11:30-12:10 PM\n5TH PERIOD": "CHINESE",
+                "12:10-12:50 PM": "HEALTH BREAK - LUNCH",
+                "12:50-1:30 PM\n6TH PERIOD": "SCIENCE",
+                "1:30-2:10 PM\n7TH PERIOD": "MATH",
+                "1:30-2:50 PM\n8TH PERIOD": "MATH"
+            },
+            7: {
+                "8:10-8:50 AM\n1ST PERIOD": "READING",
+                "8:50-9:30 AM\n2ND PERIOD": "READING",
+                "9:30-10:10 AM": "HEALTH BREAK - RECESS",
+                "10:10-10:50 AM\n3RD PERIOD": "MATH",
+                "10:50-11:30 AM\n4TH PERIOD": "MATH",
+                "11:30-12:10 PM\n5TH PERIOD": "CLE",
+                "12:10-12:50 PM": "HEALTH BREAK - LUNCH",
+                "12:50-1:30 PM\n6TH PERIOD": "CHINESE",
+                "1:30-2:10 PM\n7TH PERIOD": "SCIENCE",
+                "1:30-2:50 PM\n8TH PERIOD": ""
+            }
+        };
+
+        // Subject color mapping
+        const subjectColors = {
+            "ADVISORY\nPERIOD": "#FFA500", // Orange
+            "CHINESE": "#4169E1", // Royal Blue
+            "MATH": "#FFA500", // Orange
+            "SOCIAL\nSTUDIES": "#FFA500", // Orange
+            "CLE": "#4169E1", // Royal Blue
+            "READING": "#FFA500", // Orange
+            "MUSIC /\nARTS": "#FFA500", // Orange
+            "FILIPINO": "#90EE90", // Light Green
+            "LANGUAGE": "#90EE90", // Light Green
+            "P.E.": "#90EE90", // Light Green
+            "SCIENCE": "#DDA0DD", // Plum
+            "COMPUTER": "#DDA0DD", // Plum
+            "SOCIAL\nSTUDIES": "#DDA0DD", // Plum
+            "CARESO": "#90EE90", // Light Green
+            "KAB": "#696969", // Dark Gray
+            "STUDY HALL": "#696969", // Dark Gray
+            "HEALTH BREAK - RECESS": "#87CEEB", // Sky Blue
+            "HEALTH BREAK - LUNCH": "#87CEEB" // Sky Blue
+        };
+
+        // Get next school day
+        function getNextSchoolDay(date) {
+            let nextDay = new Date(date);
+            do {
+                nextDay.setDate(nextDay.getDate() + 1);
+            } while (!isSchoolDay(nextDay));
+            return nextDay;
+        }
+
+        // Open schedule modal
+        function openScheduleModal() {
+            const today = new Date(currentDate);
+            const tomorrow = getNextSchoolDay(today);
+            
+            const todayCycleDay = getEffectiveCycleDay(today);
+            const tomorrowCycleDay = getEffectiveCycleDay(tomorrow);
+            
+            const content = document.getElementById('scheduleContent');
+            content.innerHTML = '';
+            
+            // Today's schedule
+            if (isSchoolDay(today) && todayCycleDay > 0) {
+                content.appendChild(createScheduleTable(today, todayCycleDay, 'Today'));
+            }
+            
+            // Tomorrow's schedule
+            if (tomorrowCycleDay > 0) {
+                content.appendChild(createScheduleTable(tomorrow, tomorrowCycleDay, 'Tomorrow'));
+            }
+            
+            // If no school days
+            if ((!isSchoolDay(today) || todayCycleDay === 0) && tomorrowCycleDay === 0) {
+                const noSchool = document.createElement('div');
+                noSchool.className = 'text-center text-gray-600 text-lg';
+                noSchool.innerHTML = '📅 No school days in the next 2 days';
+                content.appendChild(noSchool);
+            }
+            
+            document.getElementById('scheduleModal').classList.remove('hidden');
+        }
+
+        // Close schedule modal
+        function closeScheduleModal() {
+            document.getElementById('scheduleModal').classList.add('hidden');
+        }
+
+        // Create schedule table
+        function createScheduleTable(date, cycleDay, dayLabel) {
+            const container = document.createElement('div');
+            container.className = 'mb-6';
+            
+            const dateStr = date.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            
+            const header = document.createElement('h3');
+            header.className = 'text-xl font-bold text-gray-800 mb-3';
+            header.textContent = `${dayLabel} - ${dateStr} (Day ${cycleDay})`;
+            container.appendChild(header);
+            
+            if (cycleDay === 0) {
+                const noClass = document.createElement('p');
+                noClass.className = 'text-gray-600';
+                noClass.textContent = 'No cycle classes today';
+                container.appendChild(noClass);
+                return container;
+            }
+            
+            const table = document.createElement('table');
+            table.className = 'w-full border-collapse border border-gray-300 text-sm';
+            
+            const schedule = classSchedule[cycleDay];
+            
+            for (const [time, subject] of Object.entries(schedule)) {
+                const row = document.createElement('tr');
+                
+                const timeCell = document.createElement('td');
+                timeCell.className = 'border border-gray-300 p-3 font-semibold bg-gray-100 text-center min-w-[120px]';
+                timeCell.style.whiteSpace = 'pre-line';
+                timeCell.textContent = time;
+                
+                const subjectCell = document.createElement('td');
+                subjectCell.className = 'border border-gray-300 p-3 text-center font-medium';
+                subjectCell.style.whiteSpace = 'pre-line';
+                subjectCell.textContent = subject;
+                
+                // Apply subject color
+                const color = subjectColors[subject];
+                if (color) {
+                    subjectCell.style.backgroundColor = color;
+                    subjectCell.style.color = color === '#696969' ? 'white' : 'black';
+                }
+                
+                row.appendChild(timeCell);
+                row.appendChild(subjectCell);
+                table.appendChild(row);
+            }
+            
+            container.appendChild(table);
+            return container;
+        }
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY_HERE",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+    </script>
+
+    <!-- Main Container -->
+    <div class="p-4">
+        <div class="max-w-4xl mx-auto">
+            
+            <!-- Header -->
+            <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div id="syncStatus" class="flex items-center space-x-2 px-3 py-1 rounded-full text-sm bg-green-100 text-green-700">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span>Synced</span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-center">
+                    <div class="text-center">
+                        <div class="flex items-center space-x-3 justify-center mb-2">
+                            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">School Cycle Calendar</h1>
+                        </div>
+                        <div class="bg-blue-100 rounded-xl p-4 inline-block">
+                            <div id="todayBanner" class="text-3xl font-bold text-blue-800">
+                                TODAY IS DAY 7, CYCLE 1
+                            </div>
+                            <div id="todayDate" class="text-blue-600 font-medium mt-1">
+                                Wednesday, June 11, 2025
+                            </div>
+                            <button id="scheduleButton" onclick="openScheduleModal()" class="mt-3 px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors">
+                                📚 See Class Schedule
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendar -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <!-- Month Navigation -->
+                <div class="bg-gradient-to-r from-blue-600 to-green-600 text-white p-4 flex items-center justify-between">
+                    <button id="prevMonth" class="p-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </button>
+                    <h2 id="monthYear" class="text-xl sm:text-2xl font-bold">June 2025</h2>
+                    <button id="nextMonth" class="p-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Days of Week Header -->
+                <div class="grid grid-cols-7 bg-gray-50">
+                    <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Sun</div>
+                    <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Mon</div>
+                    <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Tue</div>
+                    <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Wed</div>
+                    <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Thu</div>
+                    <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Fri</div>
+                    <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Sat</div>
+                </div>
+
+                <!-- Calendar Grid -->
+                <div id="calendarGrid" class="grid grid-cols-7">
+                    <!-- Calendar days will be generated here -->
+                </div>
+            </div>
+
+            <!-- Legend -->
+            <div class="bg-white rounded-2xl shadow-xl p-6 mt-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">Legend</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 text-sm mb-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-4 h-4 bg-yellow-200 border-2 border-yellow-400 rounded"></div>
+                        <span>Today</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-4 h-4 bg-gray-100 rounded opacity-60"></div>
+                        <span>Past Dates</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-4 h-4 bg-gray-200 rounded"></div>
+                        <span>Day 0 (No Cycle)</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-4 h-4 bg-gray-100 rounded"></div>
+                        <span>Weekends</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-4 h-4 bg-red-50 relative rounded">
+                            <div class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></div>
+                        </div>
+                        <span>Public Holidays</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-4 h-4 bg-gray-100 relative rounded">
+                            <div class="absolute top-0 left-0 w-2 h-2 bg-orange-500 rounded-full"></div>
+                        </div>
+                        <span>School Breaks</span>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h4 class="font-semibold text-gray-700 mb-2">Cycle Colors:</h4>
+                    <div class="grid grid-cols-7 gap-2 text-xs">
+                        <div class="p-2 rounded text-center font-medium bg-blue-200 border-blue-400 text-blue-900">Cycle 1</div>
+                        <div class="p-2 rounded text-center font-medium bg-green-200 border-green-400 text-green-900">Cycle 2</div>
+                        <div class="p-2 rounded text-center font-medium bg-purple-200 border-purple-400 text-purple-900">Cycle 3</div>
+                        <div class="p-2 rounded text-center font-medium bg-orange-200 border-orange-400 text-orange-900">Cycle 4</div>
+                        <div class="p-2 rounded text-center font-medium bg-pink-200 border-pink-400 text-pink-900">Cycle 5</div>
+                        <div class="p-2 rounded text-center font-medium bg-indigo-200 border-indigo-400 text-indigo-900">Cycle 6</div>
+                        <div class="p-2 rounded text-center font-medium bg-red-200 border-red-400 text-red-900">Cycle 7</div>
+                    </div>
+                </div>
+                
+                <div class="text-xs text-gray-600">
+                    <p><strong>Real-time sync:</strong> Changes are instantly visible to all users.</p>
+                    <p><strong>Click any cycle number</strong> (future dates only) to adjust it. Changes will automatically update all following days.</p>
+                    <p><strong>Past dates</strong> are greyed out and cannot be modified.</p>
+                    <p><strong>Day 0:</strong> Non-cycle school days. Next school day after Day 0 becomes Day 1.</p>
+                    <p><strong>Default:</strong> First cycle begins Wednesday, June 18, 2025. Days before are Day 0.</p>
+                    <p><strong>Red dots:</strong> Public holidays. <strong>Orange dots:</strong> School breaks (no cycle days).</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Modal -->
+    <div id="scheduleModal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
+        <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeScheduleModal()"></div>
+        <div class="relative bg-white border-2 border-blue-300 rounded-2xl shadow-2xl overflow-hidden max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="bg-gradient-to-r from-blue-500 to-purple-500 text-white p-4 text-center">
+                <div class="text-lg font-bold">📚 Grade 3-H Class Schedule</div>
+                <button onclick="closeScheduleModal()" class="absolute top-4 right-4 text-white hover:text-gray-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <div id="scheduleContent" class="space-y-6">
+                    <!-- Schedule tables will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="modal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
+        <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeModal()"></div>
+        <div class="relative bg-white border-2 border-blue-300 rounded-2xl shadow-2xl overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-500 to-purple-500 text-white p-4 text-center">
+                <div class="text-lg font-bold">Select Cycle Day</div>
+            </div>
+            
+            <div class="flex flex-col items-center p-6">
+                <button onclick="scrollSlot('up')" class="p-2 hover:bg-blue-100 rounded-full transition-colors mb-4">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                    </svg>
+                </button>
+                
+                <div class="relative h-16 w-20 overflow-hidden">
+                    <div id="slotContainer" class="flex flex-col items-center transition-transform duration-300 ease-in-out">
+                        <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">0</div>
+                        <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">1</div>
+                        <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">2</div>
+                        <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">3</div>
+                        <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">4</div>
+                        <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">5</div>
+                        <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">6</div>
+                        <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">7</div>
+                    </div>
+                </div>
+                
+                <button onclick="scrollSlot('down')" class="p-2 hover:bg-blue-100 rounded-full transition-colors mt-4">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+                
+                <div class="flex space-x-4 mt-6">
+                    <button onclick="selectCycleDay()" class="px-6 py-3 bg-blue-500 text-white rounded-lg text-lg font-medium hover:bg-blue-600 transition-colors">
+                        Select
+                    </button>
+                    <button onclick="closeModal()" class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg text-lg font-medium hover:bg-gray-400 transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Prevent double-tap zoom - simplified and more aggressive approach
+        let lastTouchEnd = 0;
+        
+        document.addEventListener('touchend', function (event) {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, { passive: false });
+
+        // Prevent all gestures
+        document.addEventListener('gesturestart', function (e) {
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('gesturechange', function (e) {
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('gestureend', function (e) {
+            e.preventDefault();
+        }, { passive: false });
+
+        // Prevent context menu on long press
+        document.addEventListener('contextmenu', function (e) {
+            e.preventDefault();
+        }, { passive: false });
+
+        // Global state
+        let currentDate = new Date();
+        let currentMonth = 5; // June (0-indexed)
+        let currentYear = 2025;
+        let customCycleDays = {};
+        let selectedSlotValue = 0;
+        let activeModalDate = null;
+        let isOnline = true;
+
+        // Philippine holidays and school breaks
+        const philippineHolidays = [
+            '2025-06-12', '2025-08-21', '2025-08-26', '2025-11-01', '2025-11-02',
+            '2025-11-30', '2025-12-25', '2025-12-30', '2025-12-31', '2026-01-01',
+            '2026-02-25', '2026-04-09', '2026-04-17', '2026-04-18', '2026-04-19'
+        ];
+
+        // School breaks (no cycle days)
+        const schoolBreaks = [
+            // September 15-16, 2025
+            '2025-09-15', '2025-09-16',
+            // October 27-31, 2025
+            '2025-10-27', '2025-10-28', '2025-10-29', '2025-10-30', '2025-10-31',
+            // November 3, 2025
+            '2025-11-03',
+            // December 22, 2025 to January 5, 2026
+            '2025-12-22', '2025-12-23', '2025-12-24', '2025-12-26', '2025-12-27',
+            '2025-12-28', '2025-12-29', '2026-01-02', '2026-01-03', '2026-01-04',
+            '2026-01-05'
+        ];
+
+        const months = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+
+        const cycleColors = [
+            'bg-blue-200 border-blue-400 text-blue-900 shadow-blue-100',
+            'bg-green-200 border-green-400 text-green-900 shadow-green-100',
+            'bg-purple-200 border-purple-400 text-purple-900 shadow-purple-100',
+            'bg-orange-200 border-orange-400 text-orange-900 shadow-orange-100',
+            'bg-pink-200 border-pink-400 text-pink-900 shadow-pink-100',
+            'bg-indigo-200 border-indigo-400 text-indigo-900 shadow-indigo-100',
+            'bg-red-200 border-red-400 text-red-900 shadow-red-100',
+        ];
+
+        // Firebase real-time listener
+        function setupFirebaseListener() {
+            db.collection('calendar').doc('cycleDays')
+                .onSnapshot((doc) => {
+                    if (doc.exists) {
+                        customCycleDays = doc.data() || {};
+                        updateSyncStatus(true);
+                        renderCalendar(); // This will update colors based on new cycle calculations
+                        updateTodayBanner();
+                    }
+                }, (error) => {
+                    console.error('Firebase sync error:', error);
+                    updateSyncStatus(false);
+                });
+        }
+
+        // Save to Firebase
+        async function saveToFirebase(newCustomDays) {
+            try {
+                await db.collection('calendar').doc('cycleDays').set(newCustomDays);
+                updateSyncStatus(true);
+            } catch (error) {
+                console.error('Error saving to Firebase:', error);
+                updateSyncStatus(false);
+            }
+        }
+
+        // Update sync status indicator
+        function updateSyncStatus(online) {
+            isOnline = online;
+            const statusEl = document.getElementById('syncStatus');
+            if (online) {
+                statusEl.className = 'flex items-center space-x-2 px-3 py-1 rounded-full text-sm bg-green-100 text-green-700';
+                statusEl.innerHTML = `
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span>Synced ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                `;
+            } else {
+                statusEl.className = 'flex items-center space-x-2 px-3 py-1 rounded-full text-sm bg-red-100 text-red-700';
+                statusEl.innerHTML = `
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span>Offline</span>
+                `;
+            }
+        }
+
+        // Utility functions
+        function isWeekend(date) {
+            const day = date.getDay();
+            return day === 0 || day === 6;
+        }
+
+        function isPastDate(date) {
+            const today = new Date(currentDate);
+            today.setHours(23, 59, 59, 999);
+            const compareDate = new Date(date);
+            compareDate.setHours(23, 59, 59, 999);
+            return compareDate < today;
+        }
+
+        function isHoliday(dateString) {
+            return philippineHolidays.includes(dateString);
+        }
+
+        function isSchoolBreak(dateString) {
+            return schoolBreaks.includes(dateString);
+        }
+
+        function isSchoolDay(date) {
+            const dateString = formatDateString(date);
+            return !isWeekend(date) && !isHoliday(dateString) && !isSchoolBreak(dateString);
+        }
+
+        function formatDateString(date) {
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+
+        function getSchoolDaysSince(startDate, endDate) {
+            let count = 0;
+            let currentDate = new Date(startDate);
+            
+            while (currentDate <= endDate) {
+                if (isSchoolDay(currentDate)) {
+                    count++;
+                }
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            
+            return count - 1;
+        }
+
+        function getEffectiveCycleDay(date) {
+            const dateString = formatDateString(date);
+            
+            if (customCycleDays.hasOwnProperty(dateString)) {
+                return customCycleDays[dateString];
+            }
+            
+            const june18 = new Date(2025, 5, 18);
+            const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const compareJune18 = new Date(2025, 5, 18);
+            
+            if (compareDate < compareJune18) {
+                return 0;
+            }
+            
+            const schoolDaysSinceStart = getSchoolDaysSince(june18, date);
+            return (schoolDaysSinceStart % 7) + 1;
+        }
+
+        function getCycleNumber(date) {
+            const cycleDay = getEffectiveCycleDay(date);
+            
+            if (cycleDay === 0) return 0;
+            
+            const june18 = new Date(2025, 5, 18);
+            if (date < june18) return 0;
+            
+            // Simple approach: look at the actual cycle day pattern to determine cycle
+            // Find all school days and their cycle days from start to this date
+            const schoolDays = [];
+            let currentCheckDate = new Date(june18);
+            
+            while (currentCheckDate <= date) {
+                if (isSchoolDay(currentCheckDate)) {
+                    const checkDateString = formatDateString(currentCheckDate);
+                    const checkCycleDay = getEffectiveCycleDay(currentCheckDate);
+                    schoolDays.push({
+                        date: new Date(currentCheckDate),
+                        dateString: checkDateString,
+                        cycleDay: checkCycleDay
+                    });
+                }
+                currentCheckDate.setDate(currentCheckDate.getDate() + 1);
+            }
+            
+            // Count cycles by looking for when day numbers reset or start a new sequence
+            let cycleNumber = 1;
+            let lastNonZeroDay = 0;
+            
+            for (let i = 0; i < schoolDays.length; i++) {
+                const day = schoolDays[i];
+                
+                if (day.cycleDay === 0) {
+                    lastNonZeroDay = 0; // Reset for next cycle
+                    if (formatDateString(day.date) === formatDateString(date)) {
+                        return 0;
+                    }
+                    continue;
+                }
+                
+                // If current day is 1 and we had a previous day (not the very first day)
+                // and the previous day wasn't 0, then we're starting a new cycle
+                if (day.cycleDay === 1 && lastNonZeroDay > 0 && lastNonZeroDay !== 0) {
+                    cycleNumber++;
+                }
+                
+                lastNonZeroDay = day.cycleDay;
+                
+                if (formatDateString(day.date) === formatDateString(date)) {
+                    return cycleNumber;
+                }
+            }
+            
+            return cycleNumber;
+        }
+
+        function getDaysInMonth(month, year) {
+            return new Date(year, month + 1, 0).getDate();
+        }
+
+        function getFirstDayOfMonth(month, year) {
+            return new Date(year, month, 1).getDay();
+        }
+
+        // Modal functions
+        function openModal(dateString, currentCycleDay) {
+            activeModalDate = dateString;
+            selectedSlotValue = currentCycleDay;
+            updateSlotDisplay();
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+            activeModalDate = null;
+        }
+
+        function scrollSlot(direction) {
+            const options = [0, 1, 2, 3, 4, 5, 6, 7];
+            const currentIndex = options.indexOf(selectedSlotValue);
+            
+            if (direction === 'up') {
+                selectedSlotValue = currentIndex > 0 ? options[currentIndex - 1] : options[options.length - 1];
+            } else {
+                selectedSlotValue = currentIndex < options.length - 1 ? options[currentIndex + 1] : options[0];
+            }
+            
+            updateSlotDisplay();
+        }
+
+        function updateSlotDisplay() {
+            const container = document.getElementById('slotContainer');
+            const options = [0, 1, 2, 3, 4, 5, 6, 7];
+            const currentIndex = options.indexOf(selectedSlotValue);
+            
+            container.style.transform = `translateY(${-currentIndex * 40 + 20}px)`;
+            
+            // Update styling
+            const slotOptions = container.querySelectorAll('.slot-machine-option');
+            slotOptions.forEach((option, index) => {
+                if (index === currentIndex) {
+                    option.className = 'slot-machine-option slot-machine-selected h-10 w-20 flex items-center justify-center text-3xl font-bold';
+                } else {
+                    option.className = 'slot-machine-option slot-machine-unselected h-10 w-20 flex items-center justify-center text-3xl font-bold';
+                }
+            });
+        }
+
+        async function selectCycleDay() {
+            if (activeModalDate) {
+                await handleCycleDayChange(activeModalDate, selectedSlotValue);
+                closeModal();
+            }
+        }
+
+        // Handle cycle day changes
+        async function handleCycleDayChange(dateString, newCycleDay) {
+            const newCustomDays = { ...customCycleDays };
+            newCustomDays[dateString] = newCycleDay;
+            
+            // Recalculate subsequent days (same logic as before)
+            const allDates = [];
+            const startDate = new Date(2025, 5, 1);
+            const endDate = new Date(2026, 2, 31);
+            let currentDate = new Date(startDate);
+            
+            while (currentDate <= endDate) {
+                if (isSchoolDay(currentDate)) {
+                    const currentDateString = formatDateString(currentDate);
+                    allDates.push({
+                        date: new Date(currentDate),
+                        dateString: currentDateString
+                    });
+                }
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            
+            const changedIndex = allDates.findIndex(item => item.dateString === dateString);
+            
+            if (changedIndex !== -1) {
+                for (let i = changedIndex + 1; i < allDates.length; i++) {
+                    const currentItem = allDates[i];
+                    
+                    let lastNonZeroDay = 0;
+                    for (let j = i - 1; j >= 0; j--) {
+                        const checkItem = allDates[j];
+                        let checkDay;
+                        
+                        if (newCustomDays.hasOwnProperty(checkItem.dateString)) {
+                            checkDay = newCustomDays[checkItem.dateString];
+                        } else if (customCycleDays.hasOwnProperty(checkItem.dateString)) {
+                            checkDay = customCycleDays[checkItem.dateString];
+                        } else {
+                            const june18 = new Date(2025, 5, 18);
+                            const checkDate = checkItem.date;
+                            const compareDate = new Date(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate());
+                            const compareJune18 = new Date(2025, 5, 18);
+                            
+                            if (compareDate < compareJune18) {
+                                checkDay = 0;
+                            } else {
+                                const schoolDaysSinceStart = getSchoolDaysSince(june18, checkDate);
+                                checkDay = (schoolDaysSinceStart % 7) + 1;
+                            }
+                        }
+                        
+                        if (checkDay !== 0) {
+                            lastNonZeroDay = checkDay;
+                            break;
+                        }
+                    }
+                    
+                    if (lastNonZeroDay === 0) {
+                        newCustomDays[currentItem.dateString] = 1;
+                    } else {
+                        newCustomDays[currentItem.dateString] = lastNonZeroDay === 7 ? 1 : lastNonZeroDay + 1;
+                    }
+                }
+            }
+            
+            // Update local state immediately for instant visual feedback
+            customCycleDays = newCustomDays;
+            renderCalendar();
+            updateTodayBanner();
+            
+            // Save to Firebase
+            await saveToFirebase(newCustomDays);
+        }
+
+        // Update today's banner
+        function updateTodayBanner() {
+            const todayDay = getEffectiveCycleDay(currentDate);
+            const todayCycle = getCycleNumber(currentDate);
+            
+            document.getElementById('todayBanner').textContent = `TODAY IS DAY ${todayDay}, CYCLE ${todayCycle}`;
+            
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            document.getElementById('todayDate').textContent = currentDate.toLocaleDateString('en-US', options);
+        }
+
+        // Navigation functions
+        function navigateMonth(direction) {
+            if (direction === 'prev') {
+                if (currentMonth === 0) {
+                    currentMonth = 11;
+                    currentYear--;
+                } else {
+                    currentMonth--;
+                }
+            } else {
+                if (currentMonth === 11) {
+                    currentMonth = 0;
+                    currentYear++;
+                } else {
+                    currentMonth++;
+                }
+            }
+            
+            renderCalendar();
+        }
+
+        // Render calendar
+        function renderCalendar() {
+            document.getElementById('monthYear').textContent = `${months[currentMonth]} ${currentYear}`;
+            
+            const daysInMonth = getDaysInMonth(currentMonth, currentYear);
+            const firstDay = getFirstDayOfMonth(currentMonth, currentYear);
+            const grid = document.getElementById('calendarGrid');
+            const todayString = formatDateString(currentDate);
+            
+            grid.innerHTML = '';
+
+            // Empty cells
+            for (let i = 0; i < firstDay; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'h-16 sm:h-20';
+                grid.appendChild(emptyCell);
+            }
+
+            // Days
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(currentYear, currentMonth, day);
+                const dateString = formatDateString(date);
+                const isToday = dateString === todayString;
+                const isPast = isPastDate(date);
+                const isSchoolDayFlag = isSchoolDay(date);
+                const cycleDay = isSchoolDayFlag ? getEffectiveCycleDay(date) : null;
+                const cycle = getCycleNumber(date);
+                const isCurrentMonth = currentMonth >= 5 && (currentYear === 2025 || (currentYear === 2026 && currentMonth <= 2));
+
+                let cellBgColor = '';
+                if (isToday) {
+                    cellBgColor = 'bg-yellow-200 border-yellow-400 text-yellow-900 shadow-yellow-100';
+                } else if (isSchoolDayFlag && cycleDay > 0 && cycle > 0 && !isPast) {
+                    const colorIndex = (cycle - 1) % cycleColors.length;
+                    cellBgColor = cycleColors[colorIndex];
+                }
+
+                const dayCell = document.createElement('div');
+                dayCell.className = `h-16 sm:h-20 border border-gray-200 flex flex-col items-center justify-center text-sm sm:text-base relative transition-all duration-200 ${
+                    isToday ? cellBgColor : 
+                    isPast && isSchoolDayFlag ? 'bg-gray-100 text-gray-400 opacity-60' :
+                    isSchoolDayFlag ? (cycleDay === 0 ? 'bg-gray-200' : cellBgColor) : 
+                    isWeekend(date) ? 'bg-gray-100 text-gray-500' :
+                    'bg-red-50 text-red-500'
+                } ${!isCurrentMonth ? 'opacity-50' : ''} hover:shadow-md ${
+                    isToday ? 'ring-2 ring-yellow-500' : ''
+                }`;
+
+                // Day number
+                const dayNumber = document.createElement('span');
+                dayNumber.className = 'font-medium mb-1';
+                dayNumber.textContent = day;
+                dayCell.appendChild(dayNumber);
+
+                // Cycle day button
+                if (isSchoolDayFlag) {
+                    const cycleContainer = document.createElement('div');
+                    cycleContainer.className = 'flex flex-col items-center space-y-1 relative';
+
+                    const cycleButton = document.createElement('div');
+                    cycleButton.className = `cycle-button text-xs font-bold px-2 py-1 rounded-full border-2 transition-all ${
+                        isPast ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:shadow-md'
+                    } ${
+                        cycleDay === 0 ? 'bg-gray-400 text-white border-gray-500' :
+                        isToday ? 'bg-yellow-400 text-white border-yellow-500 shadow-lg' : 
+                        'bg-white border-current shadow-sm'
+                    }`;
+                    cycleButton.textContent = cycleDay === 0 ? '0' : cycleDay;
+
+                    if (!isPast) {
+                        cycleButton.onclick = (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openModal(dateString, cycleDay);
+                        };
+                        
+                        // Add touch event handlers to prevent zoom
+                        let touchStartTime = 0;
+                        
+                        cycleButton.addEventListener('touchstart', (e) => {
+                            touchStartTime = Date.now();
+                        }, { passive: false });
+                        
+                        cycleButton.addEventListener('touchend', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            const touchDuration = Date.now() - touchStartTime;
+                            if (touchDuration < 200) { // Quick tap
+                                openModal(dateString, cycleDay);
+                            }
+                        }, { passive: false });
+                    }
+
+                    cycleContainer.appendChild(cycleButton);
+                    dayCell.appendChild(cycleContainer);
+                }
+
+                // Holiday and school break indicators
+                if (isHoliday(dateString) && !isWeekend(date)) {
+                    const holidayDot = document.createElement('div');
+                    holidayDot.className = 'absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full';
+                    holidayDot.title = 'Public Holiday';
+                    dayCell.appendChild(holidayDot);
+                }
+                
+                if (isSchoolBreak(dateString) && !isWeekend(date)) {
+                    const breakDot = document.createElement('div');
+                    breakDot.className = 'absolute top-1 left-1 w-2 h-2 bg-orange-500 rounded-full';
+                    breakDot.title = 'School Break';
+                    dayCell.appendChild(breakDot);
+                }
+
+                grid.appendChild(dayCell);
+            }
+
+            // Update navigation buttons - remove artificial limits
+            const prevButton = document.getElementById('prevMonth');
+            const nextButton = document.getElementById('nextMonth');
+            
+            // Allow unlimited navigation but add visual cues for school year range
+            prevButton.disabled = false;
+            nextButton.disabled = false;
+            
+            // Add visual indication if we're outside the main school year
+            const isInSchoolYear = (currentYear === 2025 && currentMonth >= 5) || 
+                                 (currentYear === 2026 && currentMonth <= 2);
+            
+            if (!isInSchoolYear) {
+                document.getElementById('monthYear').style.opacity = '0.6';
+                document.getElementById('monthYear').title = 'Outside main school year (June 2025 - March 2026)';
+            } else {
+                document.getElementById('monthYear').style.opacity = '1';
+                document.getElementById('monthYear').title = '';
+            }
+        }
+
+        // Event listeners
+        document.getElementById('prevMonth').onclick = () => navigateMonth('prev');
+        document.getElementById('nextMonth').onclick = () => navigateMonth('next');
+
+        // Keyboard support for modal
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('modal').classList.contains('hidden')) return;
+            
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                scrollSlot('up');
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                scrollSlot('down');
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                selectCycleDay();
+            } else if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // Initialize
+        function init() {
+            // Set current month to actual current month
+            const today = new Date();
+            currentMonth = today.getMonth();
+            currentYear = today.getFullYear();
+            
+            // Update current date every minute
+            setInterval(() => {
+                currentDate = new Date();
+                updateTodayBanner();
+            }, 60000);
+
+            // Setup Firebase listener
+            setupFirebaseListener();
+            
+            // Initial render
+            updateTodayBanner();
+            renderCalendar();
+            
+            console.log('Calendar initialized successfully!');
+        }
+
+        // Start when page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
