@@ -66,15 +66,244 @@
 <body class="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
     <!-- 🔥 REPLACE WITH YOUR FIREBASE CONFIG -->
     <script>
-        const firebaseConfig = {
-  apiKey: "AIzaSyCi7jkj_qUfRpvdw4LBo3S-P1OGjt3ICLY",
-  authDomain: "school-calendar-f6b5d.firebaseapp.com",
-  projectId: "school-calendar-f6b5d",
-  storageBucket: "school-calendar-f6b5d.firebasestorage.app",
-  messagingSenderId: "151199046645",
-  appId: "1:151199046645:web:67ae312ad035227023debc"
-};
+        // Class schedule data based on cycle days
+        const classSchedule = {
+            1: {
+                "8:10-8:50 AM\n1ST PERIOD": "ADVISORY\nPERIOD",
+                "8:50-9:30 AM\n2ND PERIOD": "MUSIC /\nARTS",
+                "9:30-10:10 AM": "HEALTH BREAK - RECESS",
+                "10:10-10:50 AM\n3RD PERIOD": "READING",
+                "10:50-11:30 AM\n4TH PERIOD": "LANGUAGE",
+                "11:30-12:10 PM\n5TH PERIOD": "MATH",
+                "12:10-12:50 PM": "HEALTH BREAK - LUNCH",
+                "12:50-1:30 PM\n6TH PERIOD": "SOCIAL\nSTUDIES",
+                "1:30-2:10 PM\n7TH PERIOD": "FILIPINO",
+                "1:30-2:50 PM\n8TH PERIOD": "SCIENCE"
+            },
+            2: {
+                "8:10-8:50 AM\n1ST PERIOD": "CHINESE",
+                "8:50-9:30 AM\n2ND PERIOD": "CLE",
+                "9:30-10:10 AM": "HEALTH BREAK - RECESS",
+                "10:10-10:50 AM\n3RD PERIOD": "FILIPINO",
+                "10:50-11:30 AM\n4TH PERIOD": "P.E.",
+                "11:30-12:10 PM\n5TH PERIOD": "SOCIAL\nSTUDIES",
+                "12:10-12:50 PM": "HEALTH BREAK - LUNCH",
+                "12:50-1:30 PM\n6TH PERIOD": "MATH",
+                "1:30-2:10 PM\n7TH PERIOD": "MATH",
+                "1:30-2:50 PM\n8TH PERIOD": "SCIENCE"
+            },
+            3: {
+                "8:10-8:50 AM\n1ST PERIOD": "MATH",
+                "8:50-9:30 AM\n2ND PERIOD": "MATH",
+                "9:30-10:10 AM": "HEALTH BREAK - RECESS",
+                "10:10-10:50 AM\n3RD PERIOD": "FILIPINO",
+                "10:50-11:30 AM\n4TH PERIOD": "LANGUAGE",
+                "11:30-12:10 PM\n5TH PERIOD": "LANGUAGE",
+                "12:10-12:50 PM": "HEALTH BREAK - LUNCH",
+                "12:50-1:30 PM\n6TH PERIOD": "SOCIAL\nSTUDIES",
+                "1:30-2:10 PM\n7TH PERIOD": "READING",
+                "1:30-2:50 PM\n8TH PERIOD": "CHINESE"
+            },
+            4: {
+                "8:10-8:50 AM\n1ST PERIOD": "SOCIAL\nSTUDIES",
+                "8:50-9:30 AM\n2ND PERIOD": "FILIPINO",
+                "9:30-10:10 AM": "HEALTH BREAK - RECESS",
+                "10:10-10:50 AM\n3RD PERIOD": "CHINESE",
+                "10:50-11:30 AM\n4TH PERIOD": "SCIENCE",
+                "11:30-12:10 PM\n5TH PERIOD": "CLE",
+                "12:10-12:50 PM": "HEALTH BREAK - LUNCH",
+                "12:50-1:30 PM\n6TH PERIOD": "COMPUTER",
+                "1:30-2:10 PM\n7TH PERIOD": "MUSIC /\nARTS",
+                "1:30-2:50 PM\n8TH PERIOD": "KAB"
+            },
+            5: {
+                "8:10-8:50 AM\n1ST PERIOD": "CLE",
+                "8:50-9:30 AM\n2ND PERIOD": "CHINESE",
+                "9:30-10:10 AM": "HEALTH BREAK - RECESS",
+                "10:10-10:50 AM\n3RD PERIOD": "CARESO",
+                "10:50-11:30 AM\n4TH PERIOD": "P.E.",
+                "11:30-12:10 PM\n5TH PERIOD": "FILIPINO",
+                "12:10-12:50 PM": "HEALTH BREAK - LUNCH",
+                "12:50-1:30 PM\n6TH PERIOD": "COMPUTER",
+                "1:30-2:10 PM\n7TH PERIOD": "SOCIAL\nSTUDIES",
+                "1:30-2:50 PM\n8TH PERIOD": "STUDY HALL"
+            },
+            6: {
+                "8:10-8:50 AM\n1ST PERIOD": "READING",
+                "8:50-9:30 AM\n2ND PERIOD": "READING",
+                "9:30-10:10 AM": "HEALTH BREAK - RECESS",
+                "10:10-10:50 AM\n3RD PERIOD": "LANGUAGE",
+                "10:50-11:30 AM\n4TH PERIOD": "LANGUAGE",
+                "11:30-12:10 PM\n5TH PERIOD": "CHINESE",
+                "12:10-12:50 PM": "HEALTH BREAK - LUNCH",
+                "12:50-1:30 PM\n6TH PERIOD": "SCIENCE",
+                "1:30-2:10 PM\n7TH PERIOD": "MATH",
+                "1:30-2:50 PM\n8TH PERIOD": "MATH"
+            },
+            7: {
+                "8:10-8:50 AM\n1ST PERIOD": "READING",
+                "8:50-9:30 AM\n2ND PERIOD": "READING",
+                "9:30-10:10 AM": "HEALTH BREAK - RECESS",
+                "10:10-10:50 AM\n3RD PERIOD": "MATH",
+                "10:50-11:30 AM\n4TH PERIOD": "MATH",
+                "11:30-12:10 PM\n5TH PERIOD": "CLE",
+                "12:10-12:50 PM": "HEALTH BREAK - LUNCH",
+                "12:50-1:30 PM\n6TH PERIOD": "CHINESE",
+                "1:30-2:10 PM\n7TH PERIOD": "SCIENCE",
+                "1:30-2:50 PM\n8TH PERIOD": ""
+            }
+        };
 
+        // Subject color mapping
+        const subjectColors = {
+            "ADVISORY\nPERIOD": "#FFA500", // Orange
+            "CHINESE": "#4169E1", // Royal Blue
+            "MATH": "#FFA500", // Orange
+            "SOCIAL\nSTUDIES": "#FFA500", // Orange
+            "CLE": "#4169E1", // Royal Blue
+            "READING": "#FFA500", // Orange
+            "MUSIC /\nARTS": "#FFA500", // Orange
+            "FILIPINO": "#90EE90", // Light Green
+            "LANGUAGE": "#90EE90", // Light Green
+            "P.E.": "#90EE90", // Light Green
+            "SCIENCE": "#DDA0DD", // Plum
+            "COMPUTER": "#DDA0DD", // Plum
+            "SOCIAL\nSTUDIES": "#DDA0DD", // Plum
+            "CARESO": "#90EE90", // Light Green
+            "KAB": "#696969", // Dark Gray
+            "STUDY HALL": "#696969", // Dark Gray
+            "HEALTH BREAK - RECESS": "#87CEEB", // Sky Blue
+            "HEALTH BREAK - LUNCH": "#87CEEB" // Sky Blue
+        };
+
+        // Get next school day
+        function getNextSchoolDay(date) {
+            let nextDay = new Date(date);
+            do {
+                nextDay.setDate(nextDay.getDate() + 1);
+            } while (!isSchoolDay(nextDay));
+            return nextDay;
+        }
+
+        // Open schedule modal
+        function openScheduleModal() {
+            const today = new Date(currentDate);
+            const tomorrow = getNextSchoolDay(today);
+            
+            const tomorrowCycleDay = getEffectiveCycleDay(tomorrow);
+            
+            const content = document.getElementById('scheduleContent');
+            content.innerHTML = '';
+            
+            // Only show tomorrow's schedule
+            if (tomorrowCycleDay > 0) {
+                content.appendChild(createScheduleTable(tomorrow, tomorrowCycleDay, 'Tomorrow'));
+            } else {
+                const noSchool = document.createElement('div');
+                noSchool.className = 'text-center text-gray-600 text-lg';
+                noSchool.innerHTML = '📅 No school tomorrow';
+                content.appendChild(noSchool);
+            }
+            
+            document.getElementById('scheduleModal').classList.remove('hidden');
+        }
+
+        // Close schedule modal
+        function closeScheduleModal() {
+            document.getElementById('scheduleModal').classList.add('hidden');
+        }
+
+        // Create schedule table
+        function createScheduleTable(date, cycleDay, dayLabel) {
+            const container = document.createElement('div');
+            container.className = 'mb-6';
+            
+            const dateStr = date.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            
+            const header = document.createElement('h3');
+            header.className = 'text-xl font-bold text-gray-800 mb-3';
+            header.textContent = `${dayLabel} - ${dateStr} (Day ${cycleDay})`;
+            container.appendChild(header);
+            
+            if (cycleDay === 0) {
+                const noClass = document.createElement('p');
+                noClass.className = 'text-gray-600';
+                noClass.textContent = 'No cycle classes today';
+                container.appendChild(noClass);
+                return container;
+            }
+            
+            const table = document.createElement('table');
+            table.className = 'w-full border-collapse border border-gray-300 text-sm';
+            
+            const schedule = classSchedule[cycleDay];
+            
+            for (const [time, subject] of Object.entries(schedule)) {
+                const row = document.createElement('tr');
+                
+                const timeCell = document.createElement('td');
+                timeCell.className = 'border border-gray-300 p-3 font-semibold bg-gray-100 text-center min-w-[120px]';
+                timeCell.style.whiteSpace = 'pre-line';
+                timeCell.textContent = time;
+                
+                const subjectCell = document.createElement('td');
+                subjectCell.className = 'border border-gray-300 p-3 text-center font-medium';
+                subjectCell.style.whiteSpace = 'pre-line';
+                subjectCell.textContent = subject;
+                
+                // Apply color based on time period and subject
+                let backgroundColor = '#FFFFFF'; // Default white
+                let textColor = 'black';
+                
+                // Chinese is always blue regardless of time
+                if (subject === 'CHINESE') {
+                    backgroundColor = '#0061ff'; // New Blue
+                    textColor = 'white';
+                }
+                // 8:10-9:30 AM periods = Orange
+                else if (time.includes('8:10-8:50') || time.includes('8:50-9:30')) {
+                    backgroundColor = '#ff8300'; // New Orange
+                    textColor = 'white';
+                }
+                // Breaks = Gray
+                else if (time.includes('9:30-10:10') || time.includes('12:10-12:50')) {
+                    backgroundColor = '#D3D3D3'; // Light Gray
+                    textColor = 'black';
+                }
+                // 10:10-12:10 PM periods = Green  
+                else if (time.includes('10:10-10:50') || time.includes('10:50-11:30') || time.includes('11:30-12:10')) {
+                    backgroundColor = '#0ebc45'; // New Green
+                    textColor = 'white';
+                }
+                // 12:50-2:50 PM periods = Purple
+                else if (time.includes('12:50-1:30') || time.includes('1:30-2:10') || time.includes('1:30-2:50')) {
+                    backgroundColor = '#8c4ac6'; // New Purple
+                    textColor = 'white';
+                }
+                
+                subjectCell.style.backgroundColor = backgroundColor;
+                subjectCell.style.color = textColor;
+                
+                row.appendChild(timeCell);
+                row.appendChild(subjectCell);
+                table.appendChild(row);
+            }
+            
+            container.appendChild(table);
+            return container;
+        }
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY_HERE",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
@@ -111,6 +340,9 @@
                             <div id="todayDate" class="text-blue-600 font-medium mt-1">
                                 Wednesday, June 11, 2025
                             </div>
+                            <button id="scheduleButton" onclick="openScheduleModal()" class="mt-3 px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors">
+                                📚 Prepare for Tomorrow
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -209,7 +441,26 @@
         </div>
     </div>
 
-    <!-- Modal for selecting cycle days -->
+    <!-- Schedule Modal -->
+    <div id="scheduleModal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
+        <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeScheduleModal()"></div>
+        <div class="relative bg-white border-2 border-blue-300 rounded-2xl shadow-2xl overflow-hidden max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="bg-gradient-to-r from-blue-500 to-purple-500 text-white p-4 text-center">
+                <div class="text-lg font-bold">📚 Tomorrow's Class Schedule</div>
+                <button onclick="closeScheduleModal()" class="absolute top-4 right-4 text-white hover:text-gray-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <div id="scheduleContent" class="space-y-6">
+                    <!-- Schedule tables will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
     <div id="modal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
         <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeModal()"></div>
         <div class="relative bg-white border-2 border-blue-300 rounded-2xl shadow-2xl overflow-hidden">
