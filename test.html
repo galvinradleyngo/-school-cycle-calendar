@@ -190,27 +190,18 @@
             const today = new Date(currentDate);
             const tomorrow = getNextSchoolDay(today);
             
-            const todayCycleDay = getEffectiveCycleDay(today);
             const tomorrowCycleDay = getEffectiveCycleDay(tomorrow);
             
             const content = document.getElementById('scheduleContent');
             content.innerHTML = '';
             
-            // Today's schedule
-            if (isSchoolDay(today) && todayCycleDay > 0) {
-                content.appendChild(createScheduleTable(today, todayCycleDay, 'Today'));
-            }
-            
-            // Tomorrow's schedule
+            // Only show tomorrow's schedule
             if (tomorrowCycleDay > 0) {
                 content.appendChild(createScheduleTable(tomorrow, tomorrowCycleDay, 'Tomorrow'));
-            }
-            
-            // If no school days
-            if ((!isSchoolDay(today) || todayCycleDay === 0) && tomorrowCycleDay === 0) {
+            } else {
                 const noSchool = document.createElement('div');
                 noSchool.className = 'text-center text-gray-600 text-lg';
-                noSchool.innerHTML = '📅 No school days in the next 2 days';
+                noSchool.innerHTML = '📅 No school tomorrow';
                 content.appendChild(noSchool);
             }
             
@@ -346,7 +337,7 @@
                                 Wednesday, June 11, 2025
                             </div>
                             <button id="scheduleButton" onclick="openScheduleModal()" class="mt-3 px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors">
-                                📚 See Class Schedule
+                                📚 Prepare for Tomorrow
                             </button>
                         </div>
                     </div>
@@ -451,7 +442,7 @@
         <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeScheduleModal()"></div>
         <div class="relative bg-white border-2 border-blue-300 rounded-2xl shadow-2xl overflow-hidden max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div class="bg-gradient-to-r from-blue-500 to-purple-500 text-white p-4 text-center">
-                <div class="text-lg font-bold">📚 Grade 3-H Class Schedule</div>
+                <div class="text-lg font-bold">📚 Tomorrow's Class Schedule</div>
                 <button onclick="closeScheduleModal()" class="absolute top-4 right-4 text-white hover:text-gray-200">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
