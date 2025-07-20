@@ -208,15 +208,34 @@
             document.getElementById('scheduleModal').classList.remove('hidden');
         }
 
-        // Open schedule for specific date
-        function openDateScheduleModal(date) {
-            const cycleDay = getEffectiveCycleDay(date);
+        // Open all schedules modal
+        function openAllSchedulesModal() {
+            const content = document.getElementById('scheduleContent');
+            content.innerHTML = '';
+            
+            const header = document.createElement('h3');
+            header.className = 'text-2xl font-bold text-gray-800 mb-6 text-center';
+            header.textContent = 'Complete 7-Day Cycle Schedules';
+            content.appendChild(header);
+            
+            // Create schedules for all 7 cycle days
+            for (let cycleDay = 1; cycleDay <= 7; cycleDay++) {
+                content.appendChild(createScheduleTable(new Date(), cycleDay, `Day ${cycleDay}`));
+            }
+            
+            document.getElementById('scheduleModal').classList.remove('hidden');
+        }
+
+        // Open today's schedule modal
+        function openTodayScheduleModal() {
+            const today = new Date(currentDate);
+            const todayCycleDay = getEffectiveCycleDay(today);
             
             const content = document.getElementById('scheduleContent');
             content.innerHTML = '';
             
             // Check if it's a weekend
-            if (isWeekend(date)) {
+            if (isWeekend(today)) {
                 const weekendMessage = document.createElement('div');
                 weekendMessage.className = 'text-center text-gray-600 text-lg flex flex-col items-center space-y-4';
                 weekendMessage.innerHTML = `
@@ -225,13 +244,13 @@
                     <div class="text-xl text-blue-600">Enjoy the weekend!</div>
                 `;
                 content.appendChild(weekendMessage);
-            } else if (cycleDay > 0) {
-                const dateStr = date.toLocaleDateString('en-US', { 
+            } else if (todayCycleDay > 0) {
+                const dateStr = today.toLocaleDateString('en-US', { 
                     weekday: 'long', 
                     month: 'long', 
                     day: 'numeric' 
                 });
-                content.appendChild(createScheduleTable(date, cycleDay, dateStr));
+                content.appendChild(createScheduleTable(today, todayCycleDay, `Today - ${dateStr}`));
             } else {
                 const noSchool = document.createElement('div');
                 noSchool.className = 'text-center text-gray-600 text-lg';
@@ -374,9 +393,20 @@
                             <div id="todayDate" class="text-blue-600 font-medium mt-1">
                                 Wednesday, June 11, 2025
                             </div>
-                            <button id="scheduleButton" onclick="openScheduleModal()" class="mt-3 px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors">
-                                📚 Prepare for Tomorrow
-                            </button>
+                            <div id="nextDayInfo" class="text-blue-500 font-medium text-sm mt-1">
+                                Next: Thursday, June 12 - Day 1, Cycle 1
+                            </div>
+                            <div class="flex space-x-2 mt-3">
+                                <button id="scheduleButton" onclick="openScheduleModal()" class="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors">
+                                    📚 Prepare for Tomorrow
+                                </button>
+                                <button onclick="openTodayScheduleModal()" class="px-4 py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors">
+                                    📖 Review Today's Schedule
+                                </button>
+                                <button onclick="openAllSchedulesModal()" class="px-4 py-2 bg-purple-500 text-white rounded-lg font-medium hover:bg-purple-600 transition-colors">
+                                    📋 All 7-Day Schedules
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -713,13 +743,14 @@
         function getEffectiveCycleDay(date) {
             const dateString = formatDateString(date);
             
-            // Weekends are always Day 0
-            if (isWeekend(date)) {
-                return 0;
-            }
-            
+            // Check custom cycle days first (this allows overriding any date, including weekends)
             if (customCycleDays.hasOwnProperty(dateString)) {
                 return customCycleDays[dateString];
+            }
+            
+            // Weekends are Day 0 by default (but can be overridden by custom settings)
+            if (isWeekend(date)) {
+                return 0;
             }
             
             const june18 = new Date(2025, 5, 18);
@@ -938,6 +969,24 @@
                 day: 'numeric' 
             };
             document.getElementById('todayDate').textContent = currentDate.toLocaleDateString('en-US', options);
+            
+            // Get next school day info
+            const nextSchoolDay = getNextSchoolDay(currentDate);
+            const nextDay = getEffectiveCycleDay(nextSchoolDay);
+            const nextCycle = getCycleNumber(nextSchoolDay);
+            
+            const nextDayOptions = { 
+                weekday: 'long', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            const nextDayText = nextSchoolDay.toLocaleDateString('en-US', nextDayOptions);
+            
+            // Add next day info
+            const nextDayElement = document.getElementById('nextDayInfo');
+            if (nextDayElement) {
+                nextDayElement.textContent = `Next: ${nextDayText} - Day ${nextDay}, Cycle ${nextCycle}`;
+            }
         }
 
         // Navigation functions
@@ -1053,25 +1102,6 @@
                 }, { passive: false });
 
                 buttonContainer.appendChild(cycleButton);
-
-                // Schedule button
-                const scheduleButton = document.createElement('div');
-                scheduleButton.className = 'text-xs cursor-pointer hover:scale-110 transition-transform';
-                scheduleButton.textContent = '📅';
-                scheduleButton.title = 'View Schedule';
-                scheduleButton.onclick = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    openDateScheduleModal(date);
-                };
-
-                scheduleButton.addEventListener('touchend', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    openDateScheduleModal(date);
-                }, { passive: false });
-
-                buttonContainer.appendChild(scheduleButton);
                 dayCell.appendChild(buttonContainer);
 
                 // Holiday and school break indicators
