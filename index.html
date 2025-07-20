@@ -208,6 +208,114 @@
             document.getElementById('scheduleModal').classList.remove('hidden');
         }
 
+        // Open today's schedule modal
+        function openTodayScheduleModal() {
+            const today = new Date(currentDate);
+            const todayCycleDay = getEffectiveCycleDay(today);
+            
+            const content = document.getElementById('todayScheduleContent');
+            content.innerHTML = '';
+            
+            if (todayCycleDay > 0) {
+                content.appendChild(createScheduleTable(today, todayCycleDay, 'Today'));
+            } else {
+                const noSchool = document.createElement('div');
+                noSchool.className = 'text-center text-gray-600 text-lg';
+                noSchool.innerHTML = '📅 No cycle classes today';
+                content.appendChild(noSchool);
+            }
+            
+            document.getElementById('todayScheduleModal').classList.remove('hidden');
+        }
+
+        // Close today's schedule modal
+        function closeTodayScheduleModal() {
+            document.getElementById('todayScheduleModal').classList.add('hidden');
+        }
+
+        // Open all schedules modal
+        function openAllSchedulesModal() {
+            const content = document.getElementById('allSchedulesContent');
+            content.innerHTML = '';
+            
+            // Create schedules for all 7 days
+            for (let day = 1; day <= 7; day++) {
+                const container = document.createElement('div');
+                container.className = 'mb-6';
+                
+                const header = document.createElement('h3');
+                header.className = 'text-xl font-bold text-gray-800 mb-3';
+                header.textContent = `Day ${day} Schedule`;
+                container.appendChild(header);
+                
+                const table = document.createElement('table');
+                table.className = 'w-full border-collapse border border-gray-300 text-sm';
+                
+                const schedule = classSchedule[day];
+                
+                for (const [time, subject] of Object.entries(schedule)) {
+                    const row = document.createElement('tr');
+                    
+                    const timeCell = document.createElement('td');
+                    timeCell.className = 'border border-gray-300 p-3 font-semibold bg-gray-100 text-center min-w-[120px]';
+                    timeCell.style.whiteSpace = 'pre-line';
+                    timeCell.textContent = time;
+                    
+                    const subjectCell = document.createElement('td');
+                    subjectCell.className = 'border border-gray-300 p-3 text-center font-medium';
+                    subjectCell.style.whiteSpace = 'pre-line';
+                    subjectCell.textContent = subject;
+                    
+                    // Apply color based on time period and subject
+                    let backgroundColor = '#FFFFFF'; // Default white
+                    let textColor = 'black';
+                    
+                    // Chinese is always blue regardless of time
+                    if (subject === 'CHINESE') {
+                        backgroundColor = '#0061ff'; // New Blue
+                        textColor = 'white';
+                    }
+                    // 8:10-9:30 AM periods = Orange
+                    else if (time.includes('8:10-8:50') || time.includes('8:50-9:30')) {
+                        backgroundColor = '#ff8300'; // New Orange
+                        textColor = 'white';
+                    }
+                    // Breaks = Gray
+                    else if (time.includes('9:30-10:10') || time.includes('12:10-12:50')) {
+                        backgroundColor = '#D3D3D3'; // Light Gray
+                        textColor = 'black';
+                    }
+                    // 10:10-12:10 PM periods = Green  
+                    else if (time.includes('10:10-10:50') || time.includes('10:50-11:30') || time.includes('11:30-12:10')) {
+                        backgroundColor = '#0ebc45'; // New Green
+                        textColor = 'white';
+                    }
+                    // 12:50-2:50 PM periods = Purple
+                    else if (time.includes('12:50-1:30') || time.includes('1:30-2:10') || time.includes('1:30-2:50')) {
+                        backgroundColor = '#8c4ac6'; // New Purple
+                        textColor = 'white';
+                    }
+                    
+                    subjectCell.style.backgroundColor = backgroundColor;
+                    subjectCell.style.color = textColor;
+                    
+                    row.appendChild(timeCell);
+                    row.appendChild(subjectCell);
+                    table.appendChild(row);
+                }
+                
+                container.appendChild(table);
+                content.appendChild(container);
+            }
+            
+            document.getElementById('allSchedulesModal').classList.remove('hidden');
+        }
+
+        // Close all schedules modal
+        function closeAllSchedulesModal() {
+            document.getElementById('allSchedulesModal').classList.add('hidden');
+        }
+
         // Close schedule modal
         function closeScheduleModal() {
             document.getElementById('scheduleModal').classList.add('hidden');
@@ -329,7 +437,7 @@
                     <div class="text-center">
                         <div class="flex items-center space-x-3 justify-center mb-2">
                             <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 002 2z"></path>
                             </svg>
                             <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">School Cycle Calendar</h1>
                         </div>
@@ -511,6 +619,8 @@
             </div>
         </div>
     </div>
+    
+    <!-- Cycle Day Selection Modal -->
     <div id="modal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
         <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeModal()"></div>
         <div class="relative bg-white border-2 border-blue-300 rounded-2xl shadow-2xl overflow-hidden">
