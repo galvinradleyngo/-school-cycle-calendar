@@ -434,7 +434,7 @@
                     <p><strong>Click any cycle number</strong> (future dates only) to adjust it. Changes will automatically update all following days.</p>
                     <p><strong>Past dates</strong> are greyed out and cannot be modified.</p>
                     <p><strong>Day 0:</strong> Non-cycle school days. Includes weekends and special dates like July 18, 2025.</p>
-                    <p><strong>Default:</strong> First cycle begins July 21, 2025 (Monday). Weekends and July 18 are Day 0.</p>
+                    <p><strong>Default:</strong> July 21, 2025 starts as Day 1, Cycle 3. Weekends and July 18 are Day 0.</p>
                     <p><strong>Red dots:</strong> Public holidays. <strong>Orange dots:</strong> School breaks (no cycle days).</p>
                 </div>
             </div>
@@ -711,7 +711,7 @@
                 return 0;
             }
             
-            // Start the cycle from July 21, 2025 (Monday after July 18)
+            // Start the cycle from July 21, 2025 (Monday after July 18) as Day 1
             const july21 = new Date(2025, 6, 21); // July 21, 2025
             const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
             const compareJuly21 = new Date(2025, 6, 21);
@@ -719,6 +719,11 @@
             // Before July 21, everything is Day 0
             if (compareDate < compareJuly21) {
                 return 0;
+            }
+            
+            // July 21 specifically should be Day 1
+            if (dateString === '2025-07-21') {
+                return 1;
             }
             
             const schoolDaysSinceStart = getSchoolDaysSince(july21, date);
@@ -733,8 +738,13 @@
             const july21 = new Date(2025, 6, 21);
             if (date < july21) return 0;
             
-            // Simple approach: look at the actual cycle day pattern to determine cycle
-            // Find all school days and their cycle days from start to this date
+            // July 21, 2025 is Day 1, Cycle 3
+            const dateString = formatDateString(date);
+            if (dateString === '2025-07-21') {
+                return 3;
+            }
+            
+            // Calculate cycle number based on completed cycles from July 21
             const schoolDays = [];
             let currentCheckDate = new Date(july21);
             
@@ -751,8 +761,8 @@
                 currentCheckDate.setDate(currentCheckDate.getDate() + 1);
             }
             
-            // Count cycles by looking for when day numbers reset or start a new sequence
-            let cycleNumber = 1;
+            // Start with cycle 3 since July 21 is Cycle 3
+            let cycleNumber = 3;
             let lastNonZeroDay = 0;
             
             for (let i = 0; i < schoolDays.length; i++) {
@@ -768,7 +778,7 @@
                 
                 // If current day is 1 and we had a previous day (not the very first day)
                 // and the previous day wasn't 0, then we're starting a new cycle
-                if (day.cycleDay === 1 && lastNonZeroDay > 0 && lastNonZeroDay !== 0) {
+                if (day.cycleDay === 1 && lastNonZeroDay > 0 && lastNonZeroDay !== 0 && day.dateString !== '2025-07-21') {
                     cycleNumber++;
                 }
                 
