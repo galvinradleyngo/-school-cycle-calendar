@@ -672,7 +672,7 @@
                 });
         }
 
-        // Save to Firebase
+        // Save to Firebase with fallback
         async function saveToFirebase(newCustomDays) {
             try {
                 console.log('Saving to Firebase:', newCustomDays);
@@ -680,9 +680,9 @@
                 updateSyncStatus(true);
                 console.log('Successfully saved to Firebase');
             } catch (error) {
-                console.error('Error saving to Firebase:', error);
+                console.warn('Firebase save failed (permissions issue), continuing with local storage only:', error);
                 updateSyncStatus(false);
-                throw error; // Re-throw so handleCycleDayChange can handle it
+                // Don't throw error - just continue with local changes
             }
         }
 
@@ -776,8 +776,51 @@
                 return 0;
             }
             
-            const schoolDaysSinceStart = getSchoolDaysSince(june18, date);
-            return (schoolDaysSinceStart % 7) + 1;
+            // NEW LOGIC: Calculate based on actual school days and custom overrides
+            const schoolDays = [];
+            let currentCheckDate = new Date(june18);
+            
+            // Build list of all school days from June 18 to this date
+            while (currentCheckDate <= date) {
+                if (isSchoolDay(currentCheckDate)) {
+                    const checkDateString = formatDateString(currentCheckDate);
+                    schoolDays.push({
+                        date: new Date(currentCheckDate),
+                        dateString: checkDateString
+                    });
+                }
+                currentCheckDate.setDate(currentCheckDate.getDate() + 1);
+            }
+            
+            // Calculate cycle day based on previous school days and their actual values
+            let cycleDay = 1; // Default starting day
+            
+            for (let i = 0; i < schoolDays.length; i++) {
+                const schoolDay = schoolDays[i];
+                
+                if (formatDateString(schoolDay.date) === dateString) {
+                    return cycleDay;
+                }
+                
+                // Get the actual cycle day for this school day
+                let actualCycleDay;
+                if (customCycleDays.hasOwnProperty(schoolDay.dateString)) {
+                    actualCycleDay = customCycleDays[schoolDay.dateString];
+                } else {
+                    // Calculate default for this day
+                    const daysSinceStart = i;
+                    actualCycleDay = (daysSinceStart % 7) + 1;
+                }
+                
+                // Calculate next cycle day
+                if (actualCycleDay === 0) {
+                    cycleDay = 1; // After Day 0, next school day is Day 1
+                } else {
+                    cycleDay = actualCycleDay === 7 ? 1 : actualCycleDay + 1;
+                }
+            }
+            
+            return cycleDay;
         }
 
         function getCycleNumber(date) {
@@ -912,16 +955,9 @@
             renderCalendar();
             updateTodayBanner();
             
-            // Save to Firebase
-            try {
-                await saveToFirebase(customCycleDays);
-                console.log(`Successfully saved ${dateString} as day ${newCycleDay}`);
-            } catch (error) {
-                console.error('Error saving to Firebase:', error);
-                // Revert local change if save failed
-                delete customCycleDays[dateString];
-                renderCalendar();
-            }
+            // Save to Firebase (with fallback for permission issues)
+            await saveToFirebase(customCycleDays);
+            console.log(`Successfully changed ${dateString} to day ${newCycleDay}`);
         }
 
         // Update today's banner
