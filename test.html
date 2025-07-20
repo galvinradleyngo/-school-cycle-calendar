@@ -496,7 +496,6 @@
                 <div class="text-xs text-gray-600">
                     <p><strong>Real-time sync:</strong> Changes are instantly visible to all users.</p>
                     <p><strong>Click any cycle number</strong> to adjust it. Changes will automatically update all following days.</p>
-                    <p><strong>Click the 📅 button</strong> to view class schedule for that day.</p>
                     <p><strong>Day 0:</strong> Non-cycle school days and weekends. Next school day after Day 0 becomes Day 1.</p>
                     <p><strong>Default:</strong> First cycle begins Wednesday, June 18, 2025. Days before are Day 0.</p>
                     <p><strong>Red dots:</strong> Public holidays. <strong>Orange dots:</strong> School breaks (no cycle days).</p>
@@ -647,13 +646,10 @@
             'bg-red-200 border-red-400 text-red-900 shadow-red-100',
         ];
 
-        // Firebase real-time listener - TEMPORARILY DISABLED
+        // Firebase real-time listener with smart conflict resolution
         function setupFirebaseListener() {
-            console.log('Firebase listener temporarily disabled to prevent conflicts');
-            updateSyncStatus(false);
+            console.log('Setting up Firebase listener with conflict resolution...');
             
-            // TODO: Re-enable once we fix the sync conflicts
-            /*
             try {
                 db.collection('calendar').doc('cycleDays')
                     .onSnapshot((doc) => {
@@ -661,20 +657,36 @@
                         if (doc.exists) {
                             const firebaseData = doc.data() || {};
                             console.log('Firebase data:', firebaseData);
+                            console.log('Local customCycleDays before merge:', customCycleDays);
                             
-                            // Preserve critical local overrides (like July 18 = 0)
-                            const preservedLocalData = { ...customCycleDays };
+                            // Smart merge: Only update if Firebase has newer/additional data
+                            // Preserve our local critical overrides
+                            const mergedData = {};
                             
-                            // Merge Firebase data, but don't overwrite our local critical changes
-                            customCycleDays = { ...firebaseData, ...preservedLocalData };
+                            // First, add all Firebase data
+                            Object.assign(mergedData, firebaseData);
                             
-                            console.log('Local customCycleDays after merge:', customCycleDays);
+                            // Then, overlay our local changes (local takes priority)
+                            Object.assign(mergedData, customCycleDays);
+                            
+                            // Only update if there are actual changes
+                            const hasChanges = JSON.stringify(customCycleDays) !== JSON.stringify(mergedData);
+                            if (hasChanges) {
+                                customCycleDays = mergedData;
+                                console.log('Local customCycleDays after smart merge:', customCycleDays);
+                                renderCalendar();
+                                updateTodayBanner();
+                            } else {
+                                console.log('No changes detected, skipping update');
+                            }
+                            
                             updateSyncStatus(true);
-                            renderCalendar();
-                            updateTodayBanner();
                         } else {
                             console.log('No Firebase document exists yet');
-                            updateSyncStatus(false);
+                            // Create initial document with our local data
+                            if (Object.keys(customCycleDays).length > 0) {
+                                saveToFirebase(customCycleDays);
+                            }
                         }
                     }, (error) => {
                         console.warn('Firebase listener error (permissions issue):', error);
@@ -685,19 +697,13 @@
                 console.warn('Failed to set up Firebase listener:', error);
                 updateSyncStatus(false);
             }
-            */
         }
 
-        // Save to Firebase - TEMPORARILY DISABLED
+        // Save to Firebase with smart merging
         async function saveToFirebase(newCustomDays) {
-            console.log('Firebase save temporarily disabled to prevent conflicts');
-            console.log('Would save:', newCustomDays);
-            
-            // TODO: Re-enable once we fix the sync conflicts
-            /*
             try {
                 console.log('Saving to Firebase:', newCustomDays);
-                await db.collection('calendar').doc('cycleDays').set(newCustomDays);
+                await db.collection('calendar').doc('cycleDays').set(newCustomDays, { merge: true });
                 updateSyncStatus(true);
                 console.log('Successfully saved to Firebase');
             } catch (error) {
@@ -705,7 +711,6 @@
                 updateSyncStatus(false);
                 // Don't throw error - just continue with local changes
             }
-            */
         }
 
         // Update sync status indicator
