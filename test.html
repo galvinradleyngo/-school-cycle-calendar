@@ -659,12 +659,12 @@
                         if (doc.exists) {
                             const firebaseData = doc.data() || {};
                             console.log('Firebase data:', firebaseData);
-                            console.log('Local customCycleDays before merge:', customCycleDays);
                             
-                            // Only merge if Firebase has data, don't overwrite local changes
-                            if (Object.keys(firebaseData).length > 0) {
-                                customCycleDays = { ...firebaseData, ...customCycleDays };
-                            }
+                            // Preserve critical local overrides (like July 18 = 0)
+                            const preservedLocalData = { ...customCycleDays };
+                            
+                            // Merge Firebase data, but don't overwrite our local critical changes
+                            customCycleDays = { ...firebaseData, ...preservedLocalData };
                             
                             console.log('Local customCycleDays after merge:', customCycleDays);
                             updateSyncStatus(true);
@@ -770,15 +770,15 @@
         function getEffectiveCycleDay(date) {
             const dateString = formatDateString(date);
             
-            // Check custom cycle days first (this allows overriding any date, including weekends)
-            if (customCycleDays.hasOwnProperty(dateString)) {
-                console.log(`Found custom cycle day for ${dateString}: ${customCycleDays[dateString]}`);
-                return customCycleDays[dateString];
-            }
-            
             // Weekends are Day 0 by default (but can be overridden by custom settings)
             if (isWeekend(date)) {
                 return 0;
+            }
+            
+            // Check custom cycle days BEFORE any calculations
+            if (customCycleDays.hasOwnProperty(dateString)) {
+                console.log(`Found custom cycle day for ${dateString}: ${customCycleDays[dateString]}`);
+                return customCycleDays[dateString];
             }
             
             const june18 = new Date(2025, 5, 18);
@@ -815,19 +815,22 @@
                 const dayString = schoolDay.dateString;
                 
                 if (i === 0) {
-                    // First day (June 18) is Day 1 by default unless overridden
-                    calculatedCycleDays[dayString] = customCycleDays[dayString] || 1;
-                } else {
-                    // For subsequent days, calculate based on previous day
-                    const prevDay = allSchoolDays[i - 1];
-                    const prevDayString = prevDay.dateString;
-                    const prevCycleDay = calculatedCycleDays[prevDayString];
-                    
+                    // First day (June 18) - check for custom override first
                     if (customCycleDays[dayString] !== undefined) {
-                        // Use custom override
+                        calculatedCycleDays[dayString] = customCycleDays[dayString];
+                    } else {
+                        calculatedCycleDays[dayString] = 1; // Default Day 1
+                    }
+                } else {
+                    // For subsequent days, check custom override first
+                    if (customCycleDays[dayString] !== undefined) {
                         calculatedCycleDays[dayString] = customCycleDays[dayString];
                     } else {
                         // Calculate based on previous day
+                        const prevDay = allSchoolDays[i - 1];
+                        const prevDayString = prevDay.dateString;
+                        const prevCycleDay = calculatedCycleDays[prevDayString];
+                        
                         if (prevCycleDay === 0) {
                             calculatedCycleDays[dayString] = 1; // After Day 0, next is Day 1
                         } else if (prevCycleDay === 7) {
@@ -840,6 +843,7 @@
                 
                 // If this is our target date, return the calculated value
                 if (dayString === dateString) {
+                    console.log(`Calculated cycle day for ${dateString}: ${calculatedCycleDays[dayString]}`);
                     return calculatedCycleDays[dayString];
                 }
             }
@@ -1203,13 +1207,17 @@
             currentMonth = today.getMonth();
             currentYear = today.getFullYear();
             
+            // Ensure July 18 is set to Day 0 before any calculations
+            customCycleDays['2025-07-18'] = 0;
+            console.log('Initialized with July 18 as Day 0:', customCycleDays);
+            
             // Update current date every minute
             setInterval(() => {
                 currentDate = new Date();
                 updateTodayBanner();
             }, 60000);
 
-            // Setup Firebase listener
+            // Setup Firebase listener AFTER local initialization
             setupFirebaseListener();
             
             // Initial render
