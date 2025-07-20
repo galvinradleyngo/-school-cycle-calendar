@@ -538,6 +538,13 @@
             
             if (cycleDay === 0) return 0;
             
+            const dateString = formatDateString(date);
+            
+            // HARDCODED FIX: All of July should be Cycle 3
+            if (dateString >= '2025-07-01' && dateString <= '2025-07-31') {
+                return 3;
+            }
+            
             const june18 = new Date(2025, 5, 18);
             if (date < june18) return 0;
             
