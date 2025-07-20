@@ -523,12 +523,76 @@
             
             const june18 = new Date(2025, 5, 18);
             const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-            const compareJune18 = new Date(2025, 5, 18);
             
-            if (compareDate < compareJune18) {
+            if (compareDate < june18) {
                 return 0;
             }
             
+            // FIXED LOGIC: Build sequence considering custom overrides
+            const allSchoolDays = [];
+            let currentCheckDate = new Date(june18);
+            
+            while (currentCheckDate <= date) {
+                if (isSchoolDay(currentCheckDate)) {
+                    allSchoolDays.push({
+                        date: new Date(currentCheckDate),
+                        dateString: formatDateString(currentCheckDate)
+                    });
+                }
+                currentCheckDate.setDate(currentCheckDate.getDate() + 1);
+            }
+            
+            // Calculate each day in sequence
+            for (let i = 0; i < allSchoolDays.length; i++) {
+                const currentDay = allSchoolDays[i];
+                const currentDateString = currentDay.dateString;
+                
+                if (i === 0) {
+                    // First day - check custom override or default to 1
+                    if (customCycleDays.hasOwnProperty(currentDateString)) {
+                        // Keep custom value
+                    } else {
+                        // Default first day is Day 1
+                    }
+                } else {
+                    // For subsequent days, calculate based on previous day
+                    if (!customCycleDays.hasOwnProperty(currentDateString)) {
+                        const prevDay = allSchoolDays[i - 1];
+                        const prevDateString = prevDay.dateString;
+                        
+                        let prevCycleDay;
+                        if (customCycleDays.hasOwnProperty(prevDateString)) {
+                            prevCycleDay = customCycleDays[prevDateString];
+                        } else {
+                            // Calculate previous day's value
+                            const prevSchoolDaysSince = getSchoolDaysSince(june18, prevDay.date);
+                            prevCycleDay = (prevSchoolDaysSince % 7) + 1;
+                        }
+                        
+                        // Calculate current day based on previous day
+                        let currentCycleDay;
+                        if (prevCycleDay === 0) {
+                            currentCycleDay = 1; // After Day 0, next is Day 1
+                        } else if (prevCycleDay === 7) {
+                            currentCycleDay = 1; // After Day 7, next is Day 1
+                        } else {
+                            currentCycleDay = prevCycleDay + 1; // Normal increment
+                        }
+                        
+                        // If this is our target date, return the calculated value
+                        if (currentDateString === dateString) {
+                            return currentCycleDay;
+                        }
+                    }
+                }
+                
+                // If this is our target date and it has a custom override, return it
+                if (currentDateString === dateString && customCycleDays.hasOwnProperty(dateString)) {
+                    return customCycleDays[dateString];
+                }
+            }
+            
+            // Fallback to original calculation
             const schoolDaysSinceStart = getSchoolDaysSince(june18, date);
             return (schoolDaysSinceStart % 7) + 1;
         }
