@@ -649,15 +649,22 @@
 
         // Firebase real-time listener
         function setupFirebaseListener() {
+            console.log('Setting up Firebase listener...');
             db.collection('calendar').doc('cycleDays')
                 .onSnapshot((doc) => {
+                    console.log('Firebase snapshot received');
                     if (doc.exists) {
                         const firebaseData = doc.data() || {};
+                        console.log('Firebase data:', firebaseData);
+                        console.log('Local customCycleDays before merge:', customCycleDays);
                         // Merge Firebase data with local customCycleDays, keeping local overrides
                         customCycleDays = { ...firebaseData, ...customCycleDays };
+                        console.log('Local customCycleDays after merge:', customCycleDays);
                         updateSyncStatus(true);
                         renderCalendar();
                         updateTodayBanner();
+                    } else {
+                        console.log('No Firebase document exists yet');
                     }
                 }, (error) => {
                     console.error('Firebase sync error:', error);
@@ -752,6 +759,7 @@
             
             // Check custom cycle days first (this allows overriding any date, including weekends)
             if (customCycleDays.hasOwnProperty(dateString)) {
+                console.log(`Found custom cycle day for ${dateString}: ${customCycleDays[dateString]}`);
                 return customCycleDays[dateString];
             }
             
@@ -839,6 +847,7 @@
 
         // Modal functions
         function openModal(dateString, currentCycleDay) {
+            console.log(`Opening modal for date: ${dateString}, current cycle day: ${currentCycleDay}`);
             activeModalDate = dateString;
             selectedSlotValue = currentCycleDay;
             updateSlotDisplay();
@@ -846,6 +855,7 @@
         }
 
         function closeModal() {
+            console.log('Closing modal');
             document.getElementById('modal').classList.add('hidden');
             activeModalDate = null;
         }
@@ -882,9 +892,12 @@
         }
 
         async function selectCycleDay() {
+            console.log(`Select cycle day called. Active date: ${activeModalDate}, Selected value: ${selectedSlotValue}`);
             if (activeModalDate) {
                 await handleCycleDayChange(activeModalDate, selectedSlotValue);
                 closeModal();
+            } else {
+                console.error('No active modal date found!');
             }
         }
 
