@@ -647,11 +647,13 @@
             'bg-red-200 border-red-400 text-red-900 shadow-red-100',
         ];
 
-        // Firebase real-time listener with better error handling
+        // Firebase real-time listener - TEMPORARILY DISABLED
         function setupFirebaseListener() {
-            console.log('Setting up Firebase listener...');
+            console.log('Firebase listener temporarily disabled to prevent conflicts');
+            updateSyncStatus(false);
             
-            // Only set up listener if Firebase is available and has permissions
+            // TODO: Re-enable once we fix the sync conflicts
+            /*
             try {
                 db.collection('calendar').doc('cycleDays')
                     .onSnapshot((doc) => {
@@ -683,10 +685,16 @@
                 console.warn('Failed to set up Firebase listener:', error);
                 updateSyncStatus(false);
             }
+            */
         }
 
-        // Save to Firebase with fallback
+        // Save to Firebase - TEMPORARILY DISABLED
         async function saveToFirebase(newCustomDays) {
+            console.log('Firebase save temporarily disabled to prevent conflicts');
+            console.log('Would save:', newCustomDays);
+            
+            // TODO: Re-enable once we fix the sync conflicts
+            /*
             try {
                 console.log('Saving to Firebase:', newCustomDays);
                 await db.collection('calendar').doc('cycleDays').set(newCustomDays);
@@ -697,6 +705,7 @@
                 updateSyncStatus(false);
                 // Don't throw error - just continue with local changes
             }
+            */
         }
 
         // Update sync status indicator
@@ -861,48 +870,70 @@
             const june18 = new Date(2025, 5, 18);
             if (date < june18) return 0;
             
-            // Simple approach: look at the actual cycle day pattern to determine cycle
-            // Find all school days and their cycle days from start to this date
-            const schoolDays = [];
+            // Build list of all school days from June 18 to this date
+            const allSchoolDays = [];
             let currentCheckDate = new Date(june18);
+            const endDate = new Date(date);
+            endDate.setDate(endDate.getDate() + 1);
             
-            while (currentCheckDate <= date) {
+            while (currentCheckDate < endDate) {
                 if (isSchoolDay(currentCheckDate)) {
                     const checkDateString = formatDateString(currentCheckDate);
-                    const checkCycleDay = getEffectiveCycleDay(currentCheckDate);
-                    schoolDays.push({
+                    allSchoolDays.push({
                         date: new Date(currentCheckDate),
-                        dateString: checkDateString,
-                        cycleDay: checkCycleDay
+                        dateString: checkDateString
                     });
                 }
                 currentCheckDate.setDate(currentCheckDate.getDate() + 1);
             }
             
-            // Count cycles by looking for when day numbers reset or start a new sequence
+            // Calculate cycle number based on when Day 1 appears
             let cycleNumber = 1;
-            let lastNonZeroDay = 0;
+            let calculatedCycleDays = {};
             
-            for (let i = 0; i < schoolDays.length; i++) {
-                const day = schoolDays[i];
+            for (let i = 0; i < allSchoolDays.length; i++) {
+                const schoolDay = allSchoolDays[i];
+                const dayString = schoolDay.dateString;
                 
-                if (day.cycleDay === 0) {
-                    lastNonZeroDay = 0; // Reset for next cycle
-                    if (formatDateString(day.date) === formatDateString(date)) {
-                        return 0;
+                if (i === 0) {
+                    // First day (June 18)
+                    if (customCycleDays[dayString] !== undefined) {
+                        calculatedCycleDays[dayString] = customCycleDays[dayString];
+                    } else {
+                        calculatedCycleDays[dayString] = 1;
                     }
-                    continue;
+                } else {
+                    // For subsequent days
+                    if (customCycleDays[dayString] !== undefined) {
+                        calculatedCycleDays[dayString] = customCycleDays[dayString];
+                    } else {
+                        const prevDay = allSchoolDays[i - 1];
+                        const prevDayString = prevDay.dateString;
+                        const prevCycleDay = calculatedCycleDays[prevDayString];
+                        
+                        if (prevCycleDay === 0) {
+                            calculatedCycleDays[dayString] = 1;
+                        } else if (prevCycleDay === 7) {
+                            calculatedCycleDays[dayString] = 1;
+                        } else {
+                            calculatedCycleDays[dayString] = prevCycleDay + 1;
+                        }
+                    }
                 }
                 
-                // If current day is 1 and we had a previous day (not the very first day)
-                // and the previous day wasn't 0, then we're starting a new cycle
-                if (day.cycleDay === 1 && lastNonZeroDay > 0 && lastNonZeroDay !== 0) {
-                    cycleNumber++;
+                // Check if we're starting a new cycle (Day 1 after Day 7 or Day 0)
+                if (i > 0) {
+                    const currentCycleDay = calculatedCycleDays[dayString];
+                    const prevDay = allSchoolDays[i - 1];
+                    const prevCycleDay = calculatedCycleDays[prevDay.dateString];
+                    
+                    if (currentCycleDay === 1 && (prevCycleDay === 7 || prevCycleDay === 0)) {
+                        cycleNumber++;
+                    }
                 }
                 
-                lastNonZeroDay = day.cycleDay;
-                
-                if (formatDateString(day.date) === formatDateString(date)) {
+                // If this is our target date, return the cycle number
+                if (dayString === formatDateString(date)) {
                     return cycleNumber;
                 }
             }
