@@ -185,7 +185,7 @@
             return nextDay;
         }
 
-        // Open schedule modal
+        // Open schedule modal (tomorrow's schedule)
         function openScheduleModal() {
             const today = new Date(currentDate);
             const tomorrow = getNextSchoolDay(today);
@@ -343,6 +343,14 @@
                             <button id="scheduleButton" onclick="openScheduleModal()" class="mt-3 px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors">
                                 📚 Prepare for Tomorrow
                             </button>
+                            <div class="flex space-x-2 mt-2">
+                                <button onclick="openTodayScheduleModal()" class="px-3 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 transition-colors">
+                                    📖 Today's Schedule
+                                </button>
+                                <button onclick="openAllSchedulesModal()" class="px-3 py-2 bg-purple-500 text-white rounded-lg text-sm font-medium hover:bg-purple-600 transition-colors">
+                                    📋 All Schedules
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -441,7 +449,49 @@
         </div>
     </div>
 
-    <!-- Schedule Modal -->
+    <!-- Today's Schedule Modal -->
+    <div id="todayScheduleModal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
+        <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeTodayScheduleModal()"></div>
+        <div class="relative bg-white border-2 border-green-300 rounded-2xl shadow-2xl overflow-hidden max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="bg-gradient-to-r from-green-500 to-blue-500 text-white p-4 text-center">
+                <div class="text-lg font-bold">📖 Today's Class Schedule</div>
+                <button onclick="closeTodayScheduleModal()" class="absolute top-4 right-4 text-white hover:text-gray-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <div id="todayScheduleContent" class="space-y-6">
+                    <!-- Today's schedule will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- All Schedules Modal -->
+    <div id="allSchedulesModal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
+        <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeAllSchedulesModal()"></div>
+        <div class="relative bg-white border-2 border-purple-300 rounded-2xl shadow-2xl overflow-hidden max-w-7xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-4 text-center">
+                <div class="text-lg font-bold">📋 All Class Schedules (Days 1-7)</div>
+                <button onclick="closeAllSchedulesModal()" class="absolute top-4 right-4 text-white hover:text-gray-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <div id="allSchedulesContent" class="space-y-8">
+                    <!-- All schedules will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tomorrow's Schedule Modal -->
     <div id="scheduleModal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
         <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeScheduleModal()"></div>
         <div class="relative bg-white border-2 border-blue-300 rounded-2xl shadow-2xl overflow-hidden max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
@@ -621,9 +671,18 @@
                 updateSyncStatus(true);
             } catch (error) {
                 console.error('Error saving to Firebase:', error);
+                
+                // Show user-friendly error message
+                if (error.code === 'permission-denied') {
+                    alert('Permission denied: Firebase security rules need to be configured to allow writes. Please check your Firebase security rules.');
+                } else if (error.code === 'unavailable') {
+                    alert('Firebase is currently unavailable. Changes will be saved locally and synced when connection is restored.');
+                } else {
+                    alert(`Error saving changes: ${error.message}. Changes will be saved locally.`);
+                }
+                
                 updateSyncStatus(false);
-                // Revert local changes if save failed
-                throw error;
+                // Don't throw error - keep local changes even if Firebase save fails
             }
         }
 
@@ -707,7 +766,7 @@
         function getEffectiveCycleDay(date) {
             const dateString = formatDateString(date);
             
-            // Check if there's a custom setting for this date
+            // Check if there's a custom setting for this date - this takes priority over everything
             if (customCycleDays.hasOwnProperty(dateString)) {
                 return customCycleDays[dateString];
             }
@@ -727,7 +786,7 @@
                 return 0;
             }
             
-            // Start the cycle from July 21, 2025 (Monday after July 18) as Day 1
+            // Start the cycle from July 21, 2025 (Monday after July 18) as Day 1 BY DEFAULT
             const july21 = new Date(2025, 6, 21); // July 21, 2025
             const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
             const compareJuly21 = new Date(2025, 6, 21);
@@ -737,7 +796,7 @@
                 return 0;
             }
             
-            // July 21 specifically should be Day 1
+            // July 21 specifically should be Day 1 BY DEFAULT (but can be overridden by customCycleDays)
             if (dateString === '2025-07-21') {
                 return 1;
             }
@@ -941,14 +1000,8 @@
             renderCalendar();
             updateTodayBanner();
             
-            // Save to Firebase
-            try {
-                await saveToFirebase(newCustomDays);
-                console.log('Change saved successfully');
-            } catch (error) {
-                console.error('Failed to save changes:', error);
-                // Could implement retry logic or show error to user
-            }
+            // Save to Firebase (but don't fail if it doesn't work)
+            await saveToFirebase(newCustomDays);
         }
 
         // Update today's banner
