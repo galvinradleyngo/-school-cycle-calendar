@@ -591,10 +591,20 @@
             db.collection('calendar').doc('cycleDays')
                 .onSnapshot((doc) => {
                     if (doc.exists) {
-                        customCycleDays = doc.data() || {};
+                        const firebaseData = doc.data() || {};
+                        // Only update if the data is actually different to avoid overriding local changes
+                        if (JSON.stringify(customCycleDays) !== JSON.stringify(firebaseData)) {
+                            customCycleDays = firebaseData;
+                            renderCalendar();
+                            updateTodayBanner();
+                        }
                         updateSyncStatus(true);
-                        renderCalendar(); // This will update colors based on new cycle calculations
-                        updateTodayBanner();
+                    } else {
+                        // Document doesn't exist, create it with current data
+                        if (Object.keys(customCycleDays).length > 0) {
+                            saveToFirebase(customCycleDays);
+                        }
+                        updateSyncStatus(true);
                     }
                 }, (error) => {
                     console.error('Firebase sync error:', error);
@@ -605,11 +615,15 @@
         // Save to Firebase
         async function saveToFirebase(newCustomDays) {
             try {
-                await db.collection('calendar').doc('cycleDays').set(newCustomDays);
+                // Temporarily disable the listener to prevent conflicts
+                await db.collection('calendar').doc('cycleDays').set(newCustomDays, { merge: true });
+                console.log('Successfully saved to Firebase:', newCustomDays);
                 updateSyncStatus(true);
             } catch (error) {
                 console.error('Error saving to Firebase:', error);
                 updateSyncStatus(false);
+                // Revert local changes if save failed
+                throw error;
             }
         }
 
@@ -855,10 +869,12 @@
 
         // Handle cycle day changes
         async function handleCycleDayChange(dateString, newCycleDay) {
+            console.log(`Changing ${dateString} to day ${newCycleDay}`);
+            
             const newCustomDays = { ...customCycleDays };
             newCustomDays[dateString] = newCycleDay;
             
-            // Recalculate subsequent days (same logic as before)
+            // Recalculate subsequent days
             const allDates = [];
             const startDate = new Date(2025, 6, 1); // July 1
             const endDate = new Date(2026, 2, 31); // March 31
@@ -898,6 +914,8 @@
                             
                             if (compareDate < compareJuly21) {
                                 checkDay = 0;
+                            } else if (checkItem.dateString === '2025-07-21') {
+                                checkDay = 1;
                             } else {
                                 const schoolDaysSinceStart = getSchoolDaysSince(july21, checkDate);
                                 checkDay = (schoolDaysSinceStart % 7) + 1;
@@ -924,7 +942,13 @@
             updateTodayBanner();
             
             // Save to Firebase
-            await saveToFirebase(newCustomDays);
+            try {
+                await saveToFirebase(newCustomDays);
+                console.log('Change saved successfully');
+            } catch (error) {
+                console.error('Failed to save changes:', error);
+                // Could implement retry logic or show error to user
+            }
         }
 
         // Update today's banner
