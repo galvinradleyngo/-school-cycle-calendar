@@ -613,14 +613,14 @@
             e.preventDefault();
         }, { passive: false });
 
-        // Global state
+        // Global state - simplified
         let currentDate = new Date();
         let currentMonth = 5; // June (0-indexed)
         let currentYear = 2025;
-        let customCycleDays = applyCriticalFixes({});  // Start with critical fixes applied
+        let customCycleDays = {};  // Not used anymore - absolute overrides take precedence
         let selectedSlotValue = 0;
         let activeModalDate = null;
-        let isOnline = true;
+        let isOnline = false;  // Running in local mode
 
         // Philippine holidays and school breaks
         const philippineHolidays = [
@@ -658,96 +658,27 @@
             'bg-red-200 border-red-400 text-red-900 shadow-red-100',
         ];
 
-        // Firebase real-time listener with ENFORCED critical fixes
+        // DISABLED Firebase to prevent conflicts
         function setupFirebaseListener() {
-            console.log('Setting up Firebase listener with enforced critical fixes...');
+            console.log('Firebase listener DISABLED to prevent conflicts with absolute overrides');
+            updateSyncStatus(false);
             
-            try {
-                db.collection('calendar').doc('cycleDays')
-                    .onSnapshot((doc) => {
-                        console.log('Firebase snapshot received');
-                        
-                        if (doc.exists) {
-                            const firebaseData = doc.data() || {};
-                            console.log('Raw Firebase data:', firebaseData);
-                            
-                            // ALWAYS apply critical fixes after any Firebase data
-                            const correctedData = applyCriticalFixes(firebaseData);
-                            
-                            console.log('Data after applying critical fixes:', correctedData);
-                            
-                            // Update local state
-                            customCycleDays = correctedData;
-                            
-                            updateSyncStatus(true);
-                            renderCalendar();
-                            updateTodayBanner();
-                            
-                            // If Firebase data was missing our critical fixes, update Firebase
-                            const needsFixing = Object.entries(CRITICAL_FIXES).some(([date, value]) => 
-                                firebaseData[date] !== value
-                            );
-                            
-                            if (needsFixing) {
-                                console.log('Firebase missing critical fixes - updating Firebase...');
-                                setTimeout(() => {
-                                    saveToFirebase(correctedData);
-                                }, 1000);
-                            }
-                            
-                        } else {
-                            console.log('No Firebase document exists - creating with critical fixes');
-                            customCycleDays = applyCriticalFixes({});
-                            saveToFirebase(customCycleDays);
-                        }
-                    }, (error) => {
-                        console.error('Firebase listener error:', error);
-                        updateSyncStatus(false);
-                        // Ensure we still have critical fixes even offline
-                        customCycleDays = applyCriticalFixes(customCycleDays);
-                        renderCalendar();
-                        updateTodayBanner();
-                    });
-                    
-            } catch (error) {
-                console.error('Failed to set up Firebase listener:', error);
-                updateSyncStatus(false);
-                // Ensure we still have critical fixes even offline
-                customCycleDays = applyCriticalFixes(customCycleDays);
-                renderCalendar();
-                updateTodayBanner();
-            }
+            // Show offline status since we're not using Firebase
+            const statusEl = document.getElementById('syncStatus');
+            statusEl.className = 'flex items-center space-x-2 px-3 py-1 rounded-full text-sm bg-orange-100 text-orange-700';
+            statusEl.innerHTML = `
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+                <span>Local Mode</span>
+            `;
         }
 
-        // Save to Firebase with proper error handling and retry
+        // DISABLED - Save to Firebase 
         async function saveToFirebase(newCustomDays) {
-            try {
-                console.log('Saving to Firebase:', newCustomDays);
-                
-                // Use set with merge to avoid overwriting other users' changes
-                await db.collection('calendar').doc('cycleDays').set(newCustomDays, { merge: true });
-                
-                updateSyncStatus(true);
-                console.log('Successfully saved to Firebase');
-                return true;
-            } catch (error) {
-                console.error('Firebase save failed:', error);
-                updateSyncStatus(false);
-                
-                // Try again in 2 seconds
-                setTimeout(async () => {
-                    console.log('Retrying Firebase save...');
-                    try {
-                        await db.collection('calendar').doc('cycleDays').set(newCustomDays, { merge: true });
-                        updateSyncStatus(true);
-                        console.log('Retry successful');
-                    } catch (retryError) {
-                        console.error('Retry failed:', retryError);
-                    }
-                }, 2000);
-                
-                return false;
-            }
+            console.log('Firebase save DISABLED - running in local mode');
+            console.log('Would save:', newCustomDays);
+            return true;
         }
 
         // Update sync status indicator
@@ -818,37 +749,39 @@
             return count - 1;
         }
 
+        // SINGLE SOURCE OF TRUTH - Master cycle day function
         function getEffectiveCycleDay(date) {
             const dateString = formatDateString(date);
             
-            // HARDCODED FIXES - these override everything else
-            if (dateString === '2025-07-18') return 0;  // July 18 = Day 0
-            if (dateString === '2025-07-21') return 1;  // July 21 = Day 1 (FIXED)
-            if (dateString === '2025-07-22') return 2;  // July 22 = Day 2
-            if (dateString === '2025-07-23') return 3;  // July 23 = Day 3
-            if (dateString === '2025-07-24') return 4;  // July 24 = Day 4
-            if (dateString === '2025-07-25') return 5;  // July 25 = Day 5
+            // ABSOLUTE OVERRIDES - These can NEVER be changed
+            const ABSOLUTE_OVERRIDES = {
+                '2025-07-18': 0,  // July 18 = Day 0
+                '2025-07-21': 1,  // July 21 = Day 1 (FIXED)
+                '2025-07-22': 2,  // July 22 = Day 2
+                '2025-07-23': 3,  // July 23 = Day 3
+                '2025-07-24': 4,  // July 24 = Day 4
+                '2025-07-25': 5   // July 25 = Day 5
+            };
             
-            // Weekends are Day 0 by default (but can be overridden by custom settings)
+            // Check absolute overrides FIRST - nothing can override these
+            if (ABSOLUTE_OVERRIDES.hasOwnProperty(dateString)) {
+                console.log(`ABSOLUTE OVERRIDE: ${dateString} = Day ${ABSOLUTE_OVERRIDES[dateString]}`);
+                return ABSOLUTE_OVERRIDES[dateString];
+            }
+            
+            // Weekends are Day 0
             if (isWeekend(date)) {
                 return 0;
             }
             
-            // Check custom cycle days
-            if (customCycleDays.hasOwnProperty(dateString)) {
-                console.log(`Found custom cycle day for ${dateString}: ${customCycleDays[dateString]}`);
-                return customCycleDays[dateString];
-            }
-            
+            // For all other dates, use simple calculation
             const june18 = new Date(2025, 5, 18);
             const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-            const compareJune18 = new Date(2025, 5, 18);
             
-            if (compareDate < compareJune18) {
+            if (compareDate < june18) {
                 return 0;
             }
             
-            // Fallback calculation
             const schoolDaysSinceStart = getSchoolDaysSince(june18, date);
             return (schoolDaysSinceStart % 7) + 1;
         }
@@ -858,20 +791,19 @@
             
             if (cycleDay === 0) return 0;
             
-            // HARDCODED CYCLE FIXES for July 2025
             const dateString = formatDateString(date);
+            
+            // ABSOLUTE CYCLE OVERRIDES
             if (dateString >= '2025-07-21' && dateString <= '2025-07-31') {
-                return 3; // July 21+ should be Cycle 3
+                return 3; // All of late July is Cycle 3
             }
             
+            // Simple calculation for other dates
             const june18 = new Date(2025, 5, 18);
             if (date < june18) return 0;
             
-            // Simple calculation for other dates
             const schoolDaysSinceStart = getSchoolDaysSince(june18, date);
-            const cycleNumber = Math.floor(schoolDaysSinceStart / 7) + 1;
-            
-            return cycleNumber;
+            return Math.floor(schoolDaysSinceStart / 7) + 1;
         }
 
         function getDaysInMonth(month, year) {
@@ -1168,17 +1100,15 @@
             }
         });
 
-        // Initialize with enforced critical fixes
+        // Initialize with clean, simple approach
         function init() {
             // Set current month to actual current month
             const today = new Date();
             currentMonth = today.getMonth();
             currentYear = today.getFullYear();
             
-            // Ensure critical fixes are applied from the start
-            customCycleDays = applyCriticalFixes(customCycleDays);
-            
-            console.log('Initialized with enforced critical fixes:', customCycleDays);
+            console.log('Initialized calendar in LOCAL MODE');
+            console.log('July 21 will ALWAYS show as Day 1, Cycle 3');
             
             // Update current date every minute
             setInterval(() => {
@@ -1186,14 +1116,14 @@
                 updateTodayBanner();
             }, 60000);
 
-            // Setup Firebase listener
+            // Setup Firebase listener (disabled)
             setupFirebaseListener();
             
             // Initial render
             updateTodayBanner();
             renderCalendar();
             
-            console.log('Calendar initialized successfully with critical fixes protection!');
+            console.log('Calendar initialized successfully!');
         }
 
         // Start when page loads
