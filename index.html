@@ -1,4 +1,15 @@
-<!DOCTYPE html>
+// Critical fixed values that should never be overridden
+        const CRITICAL_FIXES = {
+            '2025-07-18': 0,  // July 18 = Day 0
+            '2025-07-21': 1   // July 21 = Day 1 (this fixes the sequence)
+        };
+
+        // Apply critical fixes to any data
+        function applyCriticalFixes(data) {
+            const fixedData = { ...data };
+            Object.assign(fixedData, CRITICAL_FIXES);
+            return fixedData;
+        }<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -603,10 +614,7 @@
         let currentDate = new Date();
         let currentMonth = 5; // June (0-indexed)
         let currentYear = 2025;
-        let customCycleDays = {
-            '2025-07-18': 0,  // Set July 18, 2025 to Day 0
-            '2025-07-21': 1   // Set July 21, 2025 to Day 1 to fix the sequence
-        };
+        let customCycleDays = applyCriticalFixes({});  // Start with critical fixes applied
         let selectedSlotValue = 0;
         let activeModalDate = null;
         let isOnline = true;
@@ -647,9 +655,9 @@
             'bg-red-200 border-red-400 text-red-900 shadow-red-100',
         ];
 
-        // Firebase real-time listener with proper sync
+        // Firebase real-time listener with ENFORCED critical fixes
         function setupFirebaseListener() {
-            console.log('Setting up Firebase listener...');
+            console.log('Setting up Firebase listener with enforced critical fixes...');
             
             try {
                 db.collection('calendar').doc('cycleDays')
@@ -658,36 +666,53 @@
                         
                         if (doc.exists) {
                             const firebaseData = doc.data() || {};
-                            console.log('Firebase data received:', firebaseData);
+                            console.log('Raw Firebase data:', firebaseData);
                             
-                            // Simple merge - Firebase data takes precedence for collaboration
-                            // but preserve our critical local fixes
-                            const criticalLocalData = {
-                                '2025-07-18': 0,
-                                '2025-07-21': 1
-                            };
+                            // ALWAYS apply critical fixes after any Firebase data
+                            const correctedData = applyCriticalFixes(firebaseData);
                             
-                            // Merge Firebase data with our critical overrides
-                            customCycleDays = { ...firebaseData, ...criticalLocalData };
+                            console.log('Data after applying critical fixes:', correctedData);
                             
-                            console.log('Merged data:', customCycleDays);
+                            // Update local state
+                            customCycleDays = correctedData;
+                            
                             updateSyncStatus(true);
                             renderCalendar();
                             updateTodayBanner();
                             
+                            // If Firebase data was missing our critical fixes, update Firebase
+                            const needsFixing = Object.entries(CRITICAL_FIXES).some(([date, value]) => 
+                                firebaseData[date] !== value
+                            );
+                            
+                            if (needsFixing) {
+                                console.log('Firebase missing critical fixes - updating Firebase...');
+                                setTimeout(() => {
+                                    saveToFirebase(correctedData);
+                                }, 1000);
+                            }
+                            
                         } else {
-                            console.log('No Firebase document exists - creating initial data');
-                            // Initialize Firebase with our local data
+                            console.log('No Firebase document exists - creating with critical fixes');
+                            customCycleDays = applyCriticalFixes({});
                             saveToFirebase(customCycleDays);
                         }
                     }, (error) => {
                         console.error('Firebase listener error:', error);
                         updateSyncStatus(false);
+                        // Ensure we still have critical fixes even offline
+                        customCycleDays = applyCriticalFixes(customCycleDays);
+                        renderCalendar();
+                        updateTodayBanner();
                     });
                     
             } catch (error) {
                 console.error('Failed to set up Firebase listener:', error);
                 updateSyncStatus(false);
+                // Ensure we still have critical fixes even offline
+                customCycleDays = applyCriticalFixes(customCycleDays);
+                renderCalendar();
+                updateTodayBanner();
             }
         }
 
@@ -1245,18 +1270,17 @@
             }
         });
 
-        // Initialize with fixed values and proper Firebase sync
+        // Initialize with enforced critical fixes
         function init() {
             // Set current month to actual current month
             const today = new Date();
             currentMonth = today.getMonth();
             currentYear = today.getFullYear();
             
-            // Set critical fixed values
-            customCycleDays['2025-07-18'] = 0;  // July 18 = Day 0
-            customCycleDays['2025-07-21'] = 1;  // July 21 = Day 1 (fixed)
+            // Ensure critical fixes are applied from the start
+            customCycleDays = applyCriticalFixes(customCycleDays);
             
-            console.log('Initialized with fixed values:', customCycleDays);
+            console.log('Initialized with enforced critical fixes:', customCycleDays);
             
             // Update current date every minute
             setInterval(() => {
@@ -1264,19 +1288,14 @@
                 updateTodayBanner();
             }, 60000);
 
-            // Setup Firebase listener immediately
+            // Setup Firebase listener
             setupFirebaseListener();
             
             // Initial render
             updateTodayBanner();
             renderCalendar();
             
-            // Save our initial fixed values to Firebase
-            setTimeout(() => {
-                saveToFirebase(customCycleDays);
-            }, 2000);
-            
-            console.log('Calendar initialized successfully!');
+            console.log('Calendar initialized successfully with critical fixes protection!');
         }
 
         // Start when page loads
