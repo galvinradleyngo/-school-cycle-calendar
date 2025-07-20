@@ -604,7 +604,8 @@
         let currentMonth = 5; // June (0-indexed)
         let currentYear = 2025;
         let customCycleDays = {
-            '2025-07-18': 0  // Set July 18, 2025 to Day 0
+            '2025-07-18': 0,  // Set July 18, 2025 to Day 0
+            '2025-07-21': 1   // Set July 21, 2025 to Day 1 to fix the sequence
         };
         let selectedSlotValue = 0;
         let activeModalDate = null;
@@ -646,80 +647,78 @@
             'bg-red-200 border-red-400 text-red-900 shadow-red-100',
         ];
 
-        // Firebase real-time listener with LOCAL-FIRST approach
+        // Firebase real-time listener with proper sync
         function setupFirebaseListener() {
-            console.log('Setting up Firebase listener with LOCAL-FIRST priority...');
+            console.log('Setting up Firebase listener...');
             
             try {
                 db.collection('calendar').doc('cycleDays')
                     .onSnapshot((doc) => {
                         console.log('Firebase snapshot received');
+                        
                         if (doc.exists) {
                             const firebaseData = doc.data() || {};
-                            console.log('Firebase data:', firebaseData);
-                            console.log('Local customCycleDays before merge:', customCycleDays);
+                            console.log('Firebase data received:', firebaseData);
                             
-                            // CRITICAL: Preserve our known correct local overrides
-                            const protectedLocalChanges = {
-                                '2025-07-18': 0  // July 18 must stay Day 0
+                            // Simple merge - Firebase data takes precedence for collaboration
+                            // but preserve our critical local fixes
+                            const criticalLocalData = {
+                                '2025-07-18': 0,
+                                '2025-07-21': 1
                             };
                             
-                            // Only add Firebase data for dates we DON'T have locally
-                            const mergedData = { ...customCycleDays }; // Start with our local data
+                            // Merge Firebase data with our critical overrides
+                            customCycleDays = { ...firebaseData, ...criticalLocalData };
                             
-                            // Add Firebase data only for dates not in our local data
-                            for (const [date, value] of Object.entries(firebaseData)) {
-                                if (!mergedData.hasOwnProperty(date) && !protectedLocalChanges.hasOwnProperty(date)) {
-                                    mergedData[date] = value;
-                                }
-                            }
-                            
-                            // Force our protected changes
-                            Object.assign(mergedData, protectedLocalChanges);
-                            
-                            // Only update if we're adding new data, never removing local data
-                            const oldCount = Object.keys(customCycleDays).length;
-                            const newCount = Object.keys(mergedData).length;
-                            
-                            if (newCount >= oldCount) {
-                                customCycleDays = mergedData;
-                                console.log('Local customCycleDays after LOCAL-FIRST merge:', customCycleDays);
-                                renderCalendar();
-                                updateTodayBanner();
-                            } else {
-                                console.log('Rejected Firebase data - would lose local changes');
-                            }
-                            
+                            console.log('Merged data:', customCycleDays);
                             updateSyncStatus(true);
+                            renderCalendar();
+                            updateTodayBanner();
+                            
                         } else {
-                            console.log('No Firebase document exists - creating with local data');
-                            // Create initial document with our local data
-                            if (Object.keys(customCycleDays).length > 0) {
-                                saveToFirebase(customCycleDays);
-                            }
+                            console.log('No Firebase document exists - creating initial data');
+                            // Initialize Firebase with our local data
+                            saveToFirebase(customCycleDays);
                         }
                     }, (error) => {
-                        console.warn('Firebase listener error (permissions issue):', error);
+                        console.error('Firebase listener error:', error);
                         updateSyncStatus(false);
-                        // Continue working offline - don't stop the app
                     });
+                    
             } catch (error) {
-                console.warn('Failed to set up Firebase listener:', error);
+                console.error('Failed to set up Firebase listener:', error);
                 updateSyncStatus(false);
             }
         }
 
-        // Save to Firebase with smart merging
+        // Save to Firebase with proper error handling and retry
         async function saveToFirebase(newCustomDays) {
             try {
                 console.log('Saving to Firebase:', newCustomDays);
+                
+                // Use set with merge to avoid overwriting other users' changes
                 await db.collection('calendar').doc('cycleDays').set(newCustomDays, { merge: true });
+                
                 updateSyncStatus(true);
                 console.log('Successfully saved to Firebase');
+                return true;
             } catch (error) {
-                console.warn('Firebase save failed (permissions issue), continuing with local storage only:', error);
+                console.error('Firebase save failed:', error);
                 updateSyncStatus(false);
-                // Don't throw error - just continue with local changes
+                
+                // Try again in 2 seconds
+                setTimeout(async () => {
+                    console.log('Retrying Firebase save...');
+                    try {
+                        await db.collection('calendar').doc('cycleDays').set(newCustomDays, { merge: true });
+                        updateSyncStatus(true);
+                        console.log('Retry successful');
+                    } catch (retryError) {
+                        console.error('Retry failed:', retryError);
+                    }
+                }, 2000);
+                
+                return false;
             }
         }
 
@@ -1246,20 +1245,18 @@
             }
         });
 
-        // Initialize with protected local data
+        // Initialize with fixed values and proper Firebase sync
         function init() {
             // Set current month to actual current month
             const today = new Date();
             currentMonth = today.getMonth();
             currentYear = today.getFullYear();
             
-            // CRITICAL: Force July 18 to Day 0 and protect it from Firebase
-            customCycleDays['2025-07-18'] = 0;
+            // Set critical fixed values
+            customCycleDays['2025-07-18'] = 0;  // July 18 = Day 0
+            customCycleDays['2025-07-21'] = 1;  // July 21 = Day 1 (fixed)
             
-            // Add other critical overrides here if needed
-            // customCycleDays['2025-07-XX'] = X;
-            
-            console.log('Initialized with protected local data:', customCycleDays);
+            console.log('Initialized with fixed values:', customCycleDays);
             
             // Update current date every minute
             setInterval(() => {
@@ -1267,14 +1264,17 @@
                 updateTodayBanner();
             }, 60000);
 
-            // Setup Firebase listener AFTER local initialization with a delay
-            setTimeout(() => {
-                setupFirebaseListener();
-            }, 1000); // 1 second delay to ensure local data is established
+            // Setup Firebase listener immediately
+            setupFirebaseListener();
             
             // Initial render
             updateTodayBanner();
             renderCalendar();
+            
+            // Save our initial fixed values to Firebase
+            setTimeout(() => {
+                saveToFirebase(customCycleDays);
+            }, 2000);
             
             console.log('Calendar initialized successfully!');
         }
