@@ -509,7 +509,7 @@
                 
                 <div class="text-xs text-gray-600">
                     <p><strong>Real-time sync:</strong> Changes are instantly visible to all users.</p>
-                    <p><strong>Click any cycle number</strong> to adjust it. Changes will automatically update all following days.</p>
+                    <p><strong>Click any cycle number</strong> (future dates only) to adjust it. Changes will automatically update all following days.</p>
                     <p><strong>Day 0:</strong> Non-cycle school days and weekends. Next school day after Day 0 becomes Day 1.</p>
                     <p><strong>Default:</strong> First cycle begins Wednesday, June 18, 2025. Days before are Day 0.</p>
                     <p><strong>Red dots:</strong> Public holidays. <strong>Orange dots:</strong> School breaks (no cycle days).</p>
@@ -1176,38 +1176,42 @@
                 const buttonContainer = document.createElement('div');
                 buttonContainer.className = 'flex flex-col items-center space-y-1';
 
-                // Cycle day button (for all dates including weekends and past dates)
+                // Cycle day button (only allow editing future dates)
                 const cycleButton = document.createElement('div');
-                cycleButton.className = `cycle-button text-xs font-bold px-2 py-1 rounded-full border-2 transition-all cursor-pointer hover:shadow-md ${
+                cycleButton.className = `cycle-button text-xs font-bold px-2 py-1 rounded-full border-2 transition-all ${
+                    isPast ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:shadow-md'
+                } ${
                     cycleDay === 0 ? 'bg-gray-400 text-white border-gray-500' :
                     isToday ? 'bg-yellow-400 text-white border-yellow-500 shadow-lg' : 
                     'bg-white border-current shadow-sm'
                 }`;
                 cycleButton.textContent = cycleDay === 0 ? '0' : cycleDay;
 
-                // Allow editing for all dates (remove past date restriction)
-                cycleButton.onclick = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    openModal(dateString, cycleDay);
-                };
-                
-                // Add touch event handlers to prevent zoom
-                let touchStartTime = 0;
-                
-                cycleButton.addEventListener('touchstart', (e) => {
-                    touchStartTime = Date.now();
-                }, { passive: false });
-                
-                cycleButton.addEventListener('touchend', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    const touchDuration = Date.now() - touchStartTime;
-                    if (touchDuration < 200) { // Quick tap
+                // Only allow editing for future dates (disable past date editing)
+                if (!isPast) {
+                    cycleButton.onclick = (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         openModal(dateString, cycleDay);
-                    }
-                }, { passive: false });
+                    };
+                    
+                    // Add touch event handlers to prevent zoom
+                    let touchStartTime = 0;
+                    
+                    cycleButton.addEventListener('touchstart', (e) => {
+                        touchStartTime = Date.now();
+                    }, { passive: false });
+                    
+                    cycleButton.addEventListener('touchend', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        const touchDuration = Date.now() - touchStartTime;
+                        if (touchDuration < 200) { // Quick tap
+                            openModal(dateString, cycleDay);
+                        }
+                    }, { passive: false });
+                }
 
                 buttonContainer.appendChild(cycleButton);
                 dayCell.appendChild(buttonContainer);
