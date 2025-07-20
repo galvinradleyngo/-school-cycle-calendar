@@ -666,6 +666,8 @@
             const dateString = formatDateString(date);
             // Weekends are always Day 0, not school days for cycle purposes
             if (isWeekend(date)) return false;
+            // July 18 is specifically not a school day for cycle purposes
+            if (isSpecialDay0(dateString)) return false;
             // But weekdays that aren't holidays or breaks are school days
             return !isHoliday(dateString) && !isSchoolBreak(dateString);
         }
@@ -1016,47 +1018,60 @@
                 dayNumber.textContent = day;
                 dayCell.appendChild(dayNumber);
 
-                // Cycle day button - show for all dates (including weekends as Day 0)
-                const cycleContainer = document.createElement('div');
-                cycleContainer.className = 'flex flex-col items-center space-y-1 relative';
+                // Cycle day button - show for all dates except special Day 0 dates that shouldn't be editable
+                if (!isSpecialDay0(dateString)) {
+                    const cycleContainer = document.createElement('div');
+                    cycleContainer.className = 'flex flex-col items-center space-y-1 relative';
 
-                const cycleButton = document.createElement('div');
-                cycleButton.className = `cycle-button text-xs font-bold px-2 py-1 rounded-full border-2 transition-all ${
-                    isPast ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:shadow-md'
-                } ${
-                    cycleDay === 0 ? 'bg-gray-400 text-white border-gray-500' :
-                    isToday ? 'bg-yellow-400 text-white border-yellow-500 shadow-lg' : 
-                    'bg-white border-current shadow-sm'
-                }`;
-                cycleButton.textContent = cycleDay === 0 ? '0' : cycleDay;
+                    const cycleButton = document.createElement('div');
+                    cycleButton.className = `cycle-button text-xs font-bold px-2 py-1 rounded-full border-2 transition-all ${
+                        isPast ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:shadow-md'
+                    } ${
+                        cycleDay === 0 ? 'bg-gray-400 text-white border-gray-500' :
+                        isToday ? 'bg-yellow-400 text-white border-yellow-500 shadow-lg' : 
+                        'bg-white border-current shadow-sm'
+                    }`;
+                    cycleButton.textContent = cycleDay === 0 ? '0' : cycleDay;
 
-                if (!isPast) {
-                    cycleButton.onclick = (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        openModal(dateString, cycleDay);
-                    };
-                    
-                    // Add touch event handlers to prevent zoom
-                    let touchStartTime = 0;
-                    
-                    cycleButton.addEventListener('touchstart', (e) => {
-                        touchStartTime = Date.now();
-                    }, { passive: false });
-                    
-                    cycleButton.addEventListener('touchend', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        
-                        const touchDuration = Date.now() - touchStartTime;
-                        if (touchDuration < 200) { // Quick tap
+                    if (!isPast) {
+                        cycleButton.onclick = (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             openModal(dateString, cycleDay);
-                        }
-                    }, { passive: false });
-                }
+                        };
+                        
+                        // Add touch event handlers to prevent zoom
+                        let touchStartTime = 0;
+                        
+                        cycleButton.addEventListener('touchstart', (e) => {
+                            touchStartTime = Date.now();
+                        }, { passive: false });
+                        
+                        cycleButton.addEventListener('touchend', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            const touchDuration = Date.now() - touchStartTime;
+                            if (touchDuration < 200) { // Quick tap
+                                openModal(dateString, cycleDay);
+                            }
+                        }, { passive: false });
+                    }
 
-                cycleContainer.appendChild(cycleButton);
-                dayCell.appendChild(cycleContainer);
+                    cycleContainer.appendChild(cycleButton);
+                    dayCell.appendChild(cycleContainer);
+                } else {
+                    // For special Day 0 dates (like July 18), show non-clickable Day 0
+                    const cycleContainer = document.createElement('div');
+                    cycleContainer.className = 'flex flex-col items-center space-y-1 relative';
+
+                    const cycleDisplay = document.createElement('div');
+                    cycleDisplay.className = 'text-xs font-bold px-2 py-1 rounded-full border-2 bg-purple-400 text-white border-purple-500';
+                    cycleDisplay.textContent = '0';
+
+                    cycleContainer.appendChild(cycleDisplay);
+                    dayCell.appendChild(cycleContainer);
+                }
 
                 // Holiday and school break indicators
                 if (isHoliday(dateString) && !isWeekend(date)) {
