@@ -647,29 +647,42 @@
             'bg-red-200 border-red-400 text-red-900 shadow-red-100',
         ];
 
-        // Firebase real-time listener
+        // Firebase real-time listener with better error handling
         function setupFirebaseListener() {
             console.log('Setting up Firebase listener...');
-            db.collection('calendar').doc('cycleDays')
-                .onSnapshot((doc) => {
-                    console.log('Firebase snapshot received');
-                    if (doc.exists) {
-                        const firebaseData = doc.data() || {};
-                        console.log('Firebase data:', firebaseData);
-                        console.log('Local customCycleDays before merge:', customCycleDays);
-                        // Merge Firebase data with local customCycleDays, keeping local overrides
-                        customCycleDays = { ...firebaseData, ...customCycleDays };
-                        console.log('Local customCycleDays after merge:', customCycleDays);
-                        updateSyncStatus(true);
-                        renderCalendar();
-                        updateTodayBanner();
-                    } else {
-                        console.log('No Firebase document exists yet');
-                    }
-                }, (error) => {
-                    console.error('Firebase sync error:', error);
-                    updateSyncStatus(false);
-                });
+            
+            // Only set up listener if Firebase is available and has permissions
+            try {
+                db.collection('calendar').doc('cycleDays')
+                    .onSnapshot((doc) => {
+                        console.log('Firebase snapshot received');
+                        if (doc.exists) {
+                            const firebaseData = doc.data() || {};
+                            console.log('Firebase data:', firebaseData);
+                            console.log('Local customCycleDays before merge:', customCycleDays);
+                            
+                            // Only merge if Firebase has data, don't overwrite local changes
+                            if (Object.keys(firebaseData).length > 0) {
+                                customCycleDays = { ...firebaseData, ...customCycleDays };
+                            }
+                            
+                            console.log('Local customCycleDays after merge:', customCycleDays);
+                            updateSyncStatus(true);
+                            renderCalendar();
+                            updateTodayBanner();
+                        } else {
+                            console.log('No Firebase document exists yet');
+                            updateSyncStatus(false);
+                        }
+                    }, (error) => {
+                        console.warn('Firebase listener error (permissions issue):', error);
+                        updateSyncStatus(false);
+                        // Continue working offline - don't stop the app
+                    });
+            } catch (error) {
+                console.warn('Failed to set up Firebase listener:', error);
+                updateSyncStatus(false);
+            }
         }
 
         // Save to Firebase with fallback
@@ -776,15 +789,17 @@
                 return 0;
             }
             
-            // NEW LOGIC: Calculate based on actual school days and custom overrides
-            const schoolDays = [];
+            // NEW SEQUENTIAL LOGIC: Build chronological list and calculate properly
+            const allSchoolDays = [];
             let currentCheckDate = new Date(june18);
+            const endDate = new Date(date);
+            endDate.setDate(endDate.getDate() + 1); // Include target date
             
-            // Build list of all school days from June 18 to this date
-            while (currentCheckDate <= date) {
+            // Build list of all school days from June 18 to target date
+            while (currentCheckDate < endDate) {
                 if (isSchoolDay(currentCheckDate)) {
                     const checkDateString = formatDateString(currentCheckDate);
-                    schoolDays.push({
+                    allSchoolDays.push({
                         date: new Date(currentCheckDate),
                         dateString: checkDateString
                     });
@@ -792,35 +807,46 @@
                 currentCheckDate.setDate(currentCheckDate.getDate() + 1);
             }
             
-            // Calculate cycle day based on previous school days and their actual values
-            let cycleDay = 1; // Default starting day
+            // Calculate cycle day by looking at each school day sequentially
+            let calculatedCycleDays = {};
             
-            for (let i = 0; i < schoolDays.length; i++) {
-                const schoolDay = schoolDays[i];
+            for (let i = 0; i < allSchoolDays.length; i++) {
+                const schoolDay = allSchoolDays[i];
+                const dayString = schoolDay.dateString;
                 
-                if (formatDateString(schoolDay.date) === dateString) {
-                    return cycleDay;
+                if (i === 0) {
+                    // First day (June 18) is Day 1 by default unless overridden
+                    calculatedCycleDays[dayString] = customCycleDays[dayString] || 1;
+                } else {
+                    // For subsequent days, calculate based on previous day
+                    const prevDay = allSchoolDays[i - 1];
+                    const prevDayString = prevDay.dateString;
+                    const prevCycleDay = calculatedCycleDays[prevDayString];
+                    
+                    if (customCycleDays[dayString] !== undefined) {
+                        // Use custom override
+                        calculatedCycleDays[dayString] = customCycleDays[dayString];
+                    } else {
+                        // Calculate based on previous day
+                        if (prevCycleDay === 0) {
+                            calculatedCycleDays[dayString] = 1; // After Day 0, next is Day 1
+                        } else if (prevCycleDay === 7) {
+                            calculatedCycleDays[dayString] = 1; // After Day 7, next is Day 1
+                        } else {
+                            calculatedCycleDays[dayString] = prevCycleDay + 1; // Normal increment
+                        }
+                    }
                 }
                 
-                // Get the actual cycle day for this school day
-                let actualCycleDay;
-                if (customCycleDays.hasOwnProperty(schoolDay.dateString)) {
-                    actualCycleDay = customCycleDays[schoolDay.dateString];
-                } else {
-                    // Calculate default for this day
-                    const daysSinceStart = i;
-                    actualCycleDay = (daysSinceStart % 7) + 1;
-                }
-                
-                // Calculate next cycle day
-                if (actualCycleDay === 0) {
-                    cycleDay = 1; // After Day 0, next school day is Day 1
-                } else {
-                    cycleDay = actualCycleDay === 7 ? 1 : actualCycleDay + 1;
+                // If this is our target date, return the calculated value
+                if (dayString === dateString) {
+                    return calculatedCycleDays[dayString];
                 }
             }
             
-            return cycleDay;
+            // Fallback (shouldn't reach here)
+            const schoolDaysSinceStart = getSchoolDaysSince(june18, date);
+            return (schoolDaysSinceStart % 7) + 1;
         }
 
         function getCycleNumber(date) {
