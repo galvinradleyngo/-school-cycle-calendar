@@ -1,18 +1,4 @@
-<script>
-        // Critical fixed values that should never be overridden
-        const CRITICAL_FIXES = {
-            '2025-07-18': 0,  // July 18 = Day 0
-            '2025-07-21': 1   // July 21 = Day 1 (this fixes the sequence)
-        };
-
-        // Apply critical fixes to any data
-        function applyCriticalFixes(data) {
-            const fixedData = { ...data };
-            Object.assign(fixedData, CRITICAL_FIXES);
-            return fixedData;
-        }
-
-        // Class schedule data based on cycle days<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -78,7 +64,6 @@
     </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
-    <!-- 🔥 REPLACE WITH YOUR FIREBASE CONFIG -->
     <script>
         // Class schedule data based on cycle days
         const classSchedule = {
@@ -168,28 +153,6 @@
             }
         };
 
-        // Subject color mapping
-        const subjectColors = {
-            "ADVISORY\nPERIOD": "#FFA500", // Orange
-            "CHINESE": "#4169E1", // Royal Blue
-            "MATH": "#FFA500", // Orange
-            "SOCIAL\nSTUDIES": "#FFA500", // Orange
-            "CLE": "#4169E1", // Royal Blue
-            "READING": "#FFA500", // Orange
-            "MUSIC /\nARTS": "#FFA500", // Orange
-            "FILIPINO": "#90EE90", // Light Green
-            "LANGUAGE": "#90EE90", // Light Green
-            "P.E.": "#90EE90", // Light Green
-            "SCIENCE": "#DDA0DD", // Plum
-            "COMPUTER": "#DDA0DD", // Plum
-            "SOCIAL\nSTUDIES": "#DDA0DD", // Plum
-            "CARESO": "#90EE90", // Light Green
-            "KAB": "#696969", // Dark Gray
-            "STUDY HALL": "#696969", // Dark Gray
-            "HEALTH BREAK - RECESS": "#87CEEB", // Sky Blue
-            "HEALTH BREAK - LUNCH": "#87CEEB" // Sky Blue
-        };
-
         // Get next school day
         function getNextSchoolDay(date) {
             let nextDay = new Date(date);
@@ -217,24 +180,6 @@
                 noSchool.className = 'text-center text-gray-600 text-lg';
                 noSchool.innerHTML = '📅 No school tomorrow';
                 content.appendChild(noSchool);
-            }
-            
-            document.getElementById('scheduleModal').classList.remove('hidden');
-        }
-
-        // Open all schedules modal
-        function openAllSchedulesModal() {
-            const content = document.getElementById('scheduleContent');
-            content.innerHTML = '';
-            
-            const header = document.createElement('h3');
-            header.className = 'text-2xl font-bold text-gray-800 mb-6 text-center';
-            header.textContent = 'Complete 7-Day Cycle Schedules';
-            content.appendChild(header);
-            
-            // Create schedules for all 7 cycle days
-            for (let cycleDay = 1; cycleDay <= 7; cycleDay++) {
-                content.appendChild(createScheduleTable(new Date(), cycleDay, `Day ${cycleDay}`));
             }
             
             document.getElementById('scheduleModal').classList.remove('hidden');
@@ -275,6 +220,24 @@
             document.getElementById('scheduleModal').classList.remove('hidden');
         }
 
+        // Open all schedules modal
+        function openAllSchedulesModal() {
+            const content = document.getElementById('scheduleContent');
+            content.innerHTML = '';
+            
+            const header = document.createElement('h3');
+            header.className = 'text-2xl font-bold text-gray-800 mb-6 text-center';
+            header.textContent = 'Complete 7-Day Cycle Schedules';
+            content.appendChild(header);
+            
+            // Create schedules for all 7 cycle days
+            for (let cycleDay = 1; cycleDay <= 7; cycleDay++) {
+                content.appendChild(createScheduleTable(new Date(), cycleDay, `Day ${cycleDay}`));
+            }
+            
+            document.getElementById('scheduleModal').classList.remove('hidden');
+        }
+
         // Close schedule modal
         function closeScheduleModal() {
             document.getElementById('scheduleModal').classList.add('hidden');
@@ -284,12 +247,6 @@
         function createScheduleTable(date, cycleDay, dayLabel) {
             const container = document.createElement('div');
             container.className = 'mb-6';
-            
-            const dateStr = date.toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                month: 'long', 
-                day: 'numeric' 
-            });
             
             const header = document.createElement('h3');
             header.className = 'text-xl font-bold text-gray-800 mb-3';
@@ -363,6 +320,7 @@
             container.appendChild(table);
             return container;
         }
+
         const firebaseConfig = {
           apiKey: "AIzaSyCi7jkj_qUfRpvdw4LBo3S-P1OGjt3ICLY",
           authDomain: "school-calendar-f6b5d.firebaseapp.com",
@@ -375,215 +333,7 @@
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-    </script>
 
-    <!-- Main Container -->
-    <div class="p-4">
-        <div class="max-w-4xl mx-auto">
-            
-            <!-- Header -->
-            <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
-                <div class="flex items-center justify-between mb-4">
-                    <div id="syncStatus" class="flex items-center space-x-2 px-3 py-1 rounded-full text-sm bg-green-100 text-green-700">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                        </svg>
-                        <span>Synced</span>
-                    </div>
-                </div>
-                
-                <div class="flex items-center justify-center">
-                    <div class="text-center">
-                        <div class="flex items-center space-x-3 justify-center mb-2">
-                            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                            </svg>
-                            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">School Cycle Calendar</h1>
-                        </div>
-                        <div class="bg-blue-100 rounded-xl p-4 inline-block">
-                            <div id="todayBanner" class="text-3xl font-bold text-blue-800">
-                                TODAY IS DAY 7, CYCLE 1
-                            </div>
-                            <div id="todayDate" class="text-blue-600 font-medium mt-1">
-                                Wednesday, June 11, 2025
-                            </div>
-                            <div id="nextDayInfo" class="text-blue-500 font-medium text-sm mt-1">
-                                Next: Thursday, June 12 - Day 1, Cycle 1
-                            </div>
-                            <div class="flex space-x-2 mt-3">
-                                <button id="scheduleButton" onclick="openScheduleModal()" class="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors">
-                                    📚 Prepare for Tomorrow
-                                </button>
-                                <button onclick="openTodayScheduleModal()" class="px-4 py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors">
-                                    📖 Review Today's Schedule
-                                </button>
-                                <button onclick="openAllSchedulesModal()" class="px-4 py-2 bg-purple-500 text-white rounded-lg font-medium hover:bg-purple-600 transition-colors">
-                                    📋 All 7-Day Schedules
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Calendar -->
-            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
-                <!-- Month Navigation -->
-                <div class="bg-gradient-to-r from-blue-600 to-green-600 text-white p-4 flex items-center justify-between">
-                    <button id="prevMonth" class="p-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                        </svg>
-                    </button>
-                    <h2 id="monthYear" class="text-xl sm:text-2xl font-bold">June 2025</h2>
-                    <button id="nextMonth" class="p-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                        </svg>
-                    </button>
-                </div>
-
-                <!-- Days of Week Header -->
-                <div class="grid grid-cols-7 bg-gray-50">
-                    <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Sun</div>
-                    <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Mon</div>
-                    <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Tue</div>
-                    <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Wed</div>
-                    <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Thu</div>
-                    <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Fri</div>
-                    <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Sat</div>
-                </div>
-
-                <!-- Calendar Grid -->
-                <div id="calendarGrid" class="grid grid-cols-7">
-                    <!-- Calendar days will be generated here -->
-                </div>
-            </div>
-
-            <!-- Legend -->
-            <div class="bg-white rounded-2xl shadow-xl p-6 mt-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">Legend</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 text-sm mb-4">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-4 h-4 bg-yellow-200 border-2 border-yellow-400 rounded"></div>
-                        <span>Today</span>
-                    </div>
-                    <div class="flex items-center space-x-3">
-                        <div class="w-4 h-4 bg-gray-100 rounded opacity-60"></div>
-                        <span>Past Dates</span>
-                    </div>
-                    <div class="flex items-center space-x-3">
-                        <div class="w-4 h-4 bg-gray-200 rounded"></div>
-                        <span>Day 0 (No Cycle)</span>
-                    </div>
-                    <div class="flex items-center space-x-3">
-                        <div class="w-4 h-4 bg-gray-100 rounded"></div>
-                        <span>Weekends (Day 0)</span>
-                    </div>
-                    <div class="flex items-center space-x-3">
-                        <div class="w-4 h-4 bg-red-50 relative rounded">
-                            <div class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></div>
-                        </div>
-                        <span>Public Holidays</span>
-                    </div>
-                    <div class="flex items-center space-x-3">
-                        <div class="w-4 h-4 bg-gray-100 relative rounded">
-                            <div class="absolute top-0 left-0 w-2 h-2 bg-orange-500 rounded-full"></div>
-                        </div>
-                        <span>School Breaks</span>
-                    </div>
-                </div>
-                
-                <div class="mb-4">
-                    <h4 class="font-semibold text-gray-700 mb-2">Cycle Colors:</h4>
-                    <div class="grid grid-cols-7 gap-2 text-xs">
-                        <div class="p-2 rounded text-center font-medium bg-blue-200 border-blue-400 text-blue-900">Cycle 1</div>
-                        <div class="p-2 rounded text-center font-medium bg-green-200 border-green-400 text-green-900">Cycle 2</div>
-                        <div class="p-2 rounded text-center font-medium bg-purple-200 border-purple-400 text-purple-900">Cycle 3</div>
-                        <div class="p-2 rounded text-center font-medium bg-orange-200 border-orange-400 text-orange-900">Cycle 4</div>
-                        <div class="p-2 rounded text-center font-medium bg-pink-200 border-pink-400 text-pink-900">Cycle 5</div>
-                        <div class="p-2 rounded text-center font-medium bg-indigo-200 border-indigo-400 text-indigo-900">Cycle 6</div>
-                        <div class="p-2 rounded text-center font-medium bg-red-200 border-red-400 text-red-900">Cycle 7</div>
-                    </div>
-                </div>
-                
-                <div class="text-xs text-gray-600">
-                    <p><strong>Real-time sync:</strong> Changes are instantly visible to all users.</p>
-                    <p><strong>Click any cycle number</strong> (future dates only) to adjust it. Changes will automatically update all following days.</p>
-                    <p><strong>Day 0:</strong> Non-cycle school days and weekends. Next school day after Day 0 becomes Day 1.</p>
-                    <p><strong>Default:</strong> First cycle begins Wednesday, June 18, 2025. Days before are Day 0.</p>
-                    <p><strong>Red dots:</strong> Public holidays. <strong>Orange dots:</strong> School breaks (no cycle days).</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Schedule Modal -->
-    <div id="scheduleModal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
-        <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeScheduleModal()"></div>
-        <div class="relative bg-white border-2 border-blue-300 rounded-2xl shadow-2xl overflow-hidden max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div class="bg-gradient-to-r from-blue-500 to-purple-500 text-white p-4 text-center">
-                <div class="text-lg font-bold">📚 Class Schedule</div>
-                <button onclick="closeScheduleModal()" class="absolute top-4 right-4 text-white hover:text-gray-200">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-            
-            <div class="p-6">
-                <div id="scheduleContent" class="space-y-6">
-                    <!-- Schedule tables will be inserted here -->
-                </div>
-            </div>
-        </div>
-    </div>
-    <div id="modal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
-        <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeModal()"></div>
-        <div class="relative bg-white border-2 border-blue-300 rounded-2xl shadow-2xl overflow-hidden">
-            <div class="bg-gradient-to-r from-blue-500 to-purple-500 text-white p-4 text-center">
-                <div class="text-lg font-bold">Select Cycle Day</div>
-            </div>
-            
-            <div class="flex flex-col items-center p-6">
-                <button onclick="scrollSlot('up')" class="p-2 hover:bg-blue-100 rounded-full transition-colors mb-4">
-                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-                    </svg>
-                </button>
-                
-                <div class="relative h-16 w-20 overflow-hidden">
-                    <div id="slotContainer" class="flex flex-col items-center transition-transform duration-300 ease-in-out">
-                        <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">0</div>
-                        <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">1</div>
-                        <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">2</div>
-                        <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">3</div>
-                        <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">4</div>
-                        <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">5</div>
-                        <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">6</div>
-                        <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">7</div>
-                    </div>
-                </div>
-                
-                <button onclick="scrollSlot('down')" class="p-2 hover:bg-blue-100 rounded-full transition-colors mt-4">
-                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                    </svg>
-                </button>
-                
-                <div class="flex space-x-4 mt-6">
-                    <button onclick="selectCycleDay()" class="px-6 py-3 bg-blue-500 text-white rounded-lg text-lg font-medium hover:bg-blue-600 transition-colors">
-                        Select
-                    </button>
-                    <button onclick="closeModal()" class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg text-lg font-medium hover:bg-gray-400 transition-colors">
-                        Cancel
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
         // Prevent double-tap zoom - simplified and more aggressive approach
         let lastTouchEnd = 0;
         
@@ -613,14 +363,17 @@
             e.preventDefault();
         }, { passive: false });
 
-        // Global state - simplified
+        // Global state
         let currentDate = new Date();
         let currentMonth = 5; // June (0-indexed)
         let currentYear = 2025;
-        let customCycleDays = {};  // Not used anymore - absolute overrides take precedence
+        let customCycleDays = {
+            '2025-07-18': 0,  // July 18 = Day 0
+            '2025-07-21': 1   // July 21 = Day 1 (FIXED)
+        };
         let selectedSlotValue = 0;
         let activeModalDate = null;
-        let isOnline = false;  // Running in local mode
+        let isOnline = true;
 
         // Philippine holidays and school breaks
         const philippineHolidays = [
@@ -631,13 +384,9 @@
 
         // School breaks (no cycle days)
         const schoolBreaks = [
-            // September 15-16, 2025
             '2025-09-15', '2025-09-16',
-            // October 27-31, 2025
             '2025-10-27', '2025-10-28', '2025-10-29', '2025-10-30', '2025-10-31',
-            // November 3, 2025
             '2025-11-03',
-            // December 22, 2025 to January 5, 2026
             '2025-12-22', '2025-12-23', '2025-12-24', '2025-12-26', '2025-12-27',
             '2025-12-28', '2025-12-29', '2026-01-02', '2026-01-03', '2026-01-04',
             '2026-01-05'
@@ -658,27 +407,37 @@
             'bg-red-200 border-red-400 text-red-900 shadow-red-100',
         ];
 
-        // DISABLED Firebase to prevent conflicts
+        // Firebase real-time listener
         function setupFirebaseListener() {
-            console.log('Firebase listener DISABLED to prevent conflicts with absolute overrides');
-            updateSyncStatus(false);
-            
-            // Show offline status since we're not using Firebase
-            const statusEl = document.getElementById('syncStatus');
-            statusEl.className = 'flex items-center space-x-2 px-3 py-1 rounded-full text-sm bg-orange-100 text-orange-700';
-            statusEl.innerHTML = `
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                </svg>
-                <span>Local Mode</span>
-            `;
+            db.collection('calendar').doc('cycleDays')
+                .onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const firebaseData = doc.data() || {};
+                        // CRITICAL: Preserve our fixed values and merge with Firebase
+                        customCycleDays = { 
+                            ...firebaseData, 
+                            '2025-07-18': 0,  // Always keep July 18 = Day 0
+                            '2025-07-21': 1   // Always keep July 21 = Day 1
+                        };
+                        updateSyncStatus(true);
+                        renderCalendar();
+                        updateTodayBanner();
+                    }
+                }, (error) => {
+                    console.error('Firebase sync error:', error);
+                    updateSyncStatus(false);
+                });
         }
 
-        // DISABLED - Save to Firebase 
+        // Save to Firebase
         async function saveToFirebase(newCustomDays) {
-            console.log('Firebase save DISABLED - running in local mode');
-            console.log('Would save:', newCustomDays);
-            return true;
+            try {
+                await db.collection('calendar').doc('cycleDays').set(newCustomDays);
+                updateSyncStatus(true);
+            } catch (error) {
+                console.error('Error saving to Firebase:', error);
+                updateSyncStatus(false);
+            }
         }
 
         // Update sync status indicator
@@ -749,36 +508,24 @@
             return count - 1;
         }
 
-        // SINGLE SOURCE OF TRUTH - Master cycle day function
         function getEffectiveCycleDay(date) {
             const dateString = formatDateString(date);
             
-            // ABSOLUTE OVERRIDES - These can NEVER be changed
-            const ABSOLUTE_OVERRIDES = {
-                '2025-07-18': 0,  // July 18 = Day 0
-                '2025-07-21': 1,  // July 21 = Day 1 (FIXED)
-                '2025-07-22': 2,  // July 22 = Day 2
-                '2025-07-23': 3,  // July 23 = Day 3
-                '2025-07-24': 4,  // July 24 = Day 4
-                '2025-07-25': 5   // July 25 = Day 5
-            };
-            
-            // Check absolute overrides FIRST - nothing can override these
-            if (ABSOLUTE_OVERRIDES.hasOwnProperty(dateString)) {
-                console.log(`ABSOLUTE OVERRIDE: ${dateString} = Day ${ABSOLUTE_OVERRIDES[dateString]}`);
-                return ABSOLUTE_OVERRIDES[dateString];
+            // Check for custom overrides FIRST
+            if (customCycleDays.hasOwnProperty(dateString)) {
+                return customCycleDays[dateString];
             }
             
-            // Weekends are Day 0
+            // Weekends are always Day 0
             if (isWeekend(date)) {
                 return 0;
             }
             
-            // For all other dates, use simple calculation
             const june18 = new Date(2025, 5, 18);
             const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const compareJune18 = new Date(2025, 5, 18);
             
-            if (compareDate < june18) {
+            if (compareDate < compareJune18) {
                 return 0;
             }
             
@@ -791,14 +538,6 @@
             
             if (cycleDay === 0) return 0;
             
-            const dateString = formatDateString(date);
-            
-            // ABSOLUTE CYCLE OVERRIDES
-            if (dateString >= '2025-07-21' && dateString <= '2025-07-31') {
-                return 3; // All of late July is Cycle 3
-            }
-            
-            // Simple calculation for other dates
             const june18 = new Date(2025, 5, 18);
             if (date < june18) return 0;
             
@@ -816,7 +555,6 @@
 
         // Modal functions
         function openModal(dateString, currentCycleDay) {
-            console.log(`Opening modal for date: ${dateString}, current cycle day: ${currentCycleDay}`);
             activeModalDate = dateString;
             selectedSlotValue = currentCycleDay;
             updateSlotDisplay();
@@ -824,7 +562,6 @@
         }
 
         function closeModal() {
-            console.log('Closing modal');
             document.getElementById('modal').classList.add('hidden');
             activeModalDate = null;
         }
@@ -861,29 +598,24 @@
         }
 
         async function selectCycleDay() {
-            console.log(`Select cycle day called. Active date: ${activeModalDate}, Selected value: ${selectedSlotValue}`);
             if (activeModalDate) {
                 await handleCycleDayChange(activeModalDate, selectedSlotValue);
                 closeModal();
-            } else {
-                console.error('No active modal date found!');
             }
         }
 
         // Handle cycle day changes
         async function handleCycleDayChange(dateString, newCycleDay) {
-            console.log(`Attempting to change ${dateString} to day ${newCycleDay}`);
-            
-            // Update local state immediately
             customCycleDays[dateString] = newCycleDay;
             
-            // Update UI immediately
+            // Always preserve our critical fixes
+            customCycleDays['2025-07-18'] = 0;
+            customCycleDays['2025-07-21'] = 1;
+            
             renderCalendar();
             updateTodayBanner();
             
-            // Save to Firebase (with fallback for permission issues)
             await saveToFirebase(customCycleDays);
-            console.log(`Successfully changed ${dateString} to day ${newCycleDay}`);
         }
 
         // Update today's banner
@@ -903,9 +635,6 @@
             
             // Get next school day info
             const nextSchoolDay = getNextSchoolDay(currentDate);
-            const nextDay = getEffectiveCycleDay(nextSchoolDay);
-            const nextCycle = getCycleNumber(nextSchoolDay);
-            
             const nextDayOptions = { 
                 weekday: 'long', 
                 month: 'long', 
@@ -966,7 +695,7 @@
                 const isToday = dateString === todayString;
                 const isPast = isPastDate(date);
                 const isSchoolDayFlag = isSchoolDay(date);
-                const cycleDay = getEffectiveCycleDay(date); // This will now return 0 for weekends
+                const cycleDay = getEffectiveCycleDay(date);
                 const cycle = getCycleNumber(date);
                 const isCurrentMonth = currentMonth >= 5 && (currentYear === 2025 || (currentYear === 2026 && currentMonth <= 2));
 
@@ -1010,7 +739,7 @@
                 }`;
                 cycleButton.textContent = cycleDay === 0 ? '0' : cycleDay;
 
-                // Only allow editing for future dates (disable past date editing)
+                // Only allow editing for future dates
                 if (!isPast) {
                     cycleButton.onclick = (e) => {
                         e.preventDefault();
@@ -1057,11 +786,10 @@
                 grid.appendChild(dayCell);
             }
 
-            // Update navigation buttons - remove artificial limits
+            // Update navigation buttons
             const prevButton = document.getElementById('prevMonth');
             const nextButton = document.getElementById('nextMonth');
             
-            // Allow unlimited navigation but add visual cues for school year range
             prevButton.disabled = false;
             nextButton.disabled = false;
             
@@ -1100,15 +828,12 @@
             }
         });
 
-        // Initialize with clean, simple approach
+        // Initialize
         function init() {
             // Set current month to actual current month
             const today = new Date();
             currentMonth = today.getMonth();
             currentYear = today.getFullYear();
-            
-            console.log('Initialized calendar in LOCAL MODE');
-            console.log('July 21 will ALWAYS show as Day 1, Cycle 3');
             
             // Update current date every minute
             setInterval(() => {
@@ -1116,7 +841,7 @@
                 updateTodayBanner();
             }, 60000);
 
-            // Setup Firebase listener (disabled)
+            // Setup Firebase listener
             setupFirebaseListener();
             
             // Initial render
@@ -1129,5 +854,218 @@
         // Start when page loads
         window.addEventListener('load', init);
     </script>
+</head>
+
+<!-- Main Container -->
+<div class="p-4">
+    <div class="max-w-4xl mx-auto">
+        
+        <!-- Header -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <div id="syncStatus" class="flex items-center space-x-2 px-3 py-1 rounded-full text-sm bg-green-100 text-green-700">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span>Synced</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-center">
+                <div class="text-center">
+                    <div class="flex items-center space-x-3 justify-center mb-2">
+                        <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">School Cycle Calendar</h1>
+                    </div>
+                    <div class="bg-blue-100 rounded-xl p-4 inline-block">
+                        <div id="todayBanner" class="text-3xl font-bold text-blue-800">
+                            TODAY IS DAY 7, CYCLE 1
+                        </div>
+                        <div id="todayDate" class="text-blue-600 font-medium mt-1">
+                            Wednesday, June 11, 2025
+                        </div>
+                        <div id="nextDayInfo" class="text-blue-500 font-medium text-sm mt-1">
+                            Next: Thursday, June 12 - Day 1, Cycle 1
+                        </div>
+                        <div class="flex space-x-2 mt-3">
+                            <button id="scheduleButton" onclick="openScheduleModal()" class="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors">
+                                📚 Prepare for Tomorrow
+                            </button>
+                            <button onclick="openTodayScheduleModal()" class="px-4 py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors">
+                                📖 Review Today's Schedule
+                            </button>
+                            <button onclick="openAllSchedulesModal()" class="px-4 py-2 bg-purple-500 text-white rounded-lg font-medium hover:bg-purple-600 transition-colors">
+                                📋 All 7-Day Schedules
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calendar -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <!-- Month Navigation -->
+            <div class="bg-gradient-to-r from-blue-600 to-green-600 text-white p-4 flex items-center justify-between">
+                <button id="prevMonth" class="p-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+                <h2 id="monthYear" class="text-xl sm:text-2xl font-bold">June 2025</h2>
+                <button id="nextMonth" class="p-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Days of Week Header -->
+            <div class="grid grid-cols-7 bg-gray-50">
+                <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Sun</div>
+                <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Mon</div>
+                <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Tue</div>
+                <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Wed</div>
+                <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Thu</div>
+                <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Fri</div>
+                <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Sat</div>
+            </div>
+
+            <!-- Calendar Grid -->
+            <div id="calendarGrid" class="grid grid-cols-7">
+                <!-- Calendar days will be generated here -->
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 mt-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Legend</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 text-sm mb-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-4 h-4 bg-yellow-200 border-2 border-yellow-400 rounded"></div>
+                    <span>Today</span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <div class="w-4 h-4 bg-gray-100 rounded opacity-60"></div>
+                    <span>Past Dates</span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <div class="w-4 h-4 bg-gray-200 rounded"></div>
+                    <span>Day 0 (No Cycle)</span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <div class="w-4 h-4 bg-gray-100 rounded"></div>
+                    <span>Weekends (Day 0)</span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <div class="w-4 h-4 bg-red-50 relative rounded">
+                        <div class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></div>
+                    </div>
+                    <span>Public Holidays</span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <div class="w-4 h-4 bg-gray-100 relative rounded">
+                        <div class="absolute top-0 left-0 w-2 h-2 bg-orange-500 rounded-full"></div>
+                    </div>
+                    <span>School Breaks</span>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <h4 class="font-semibold text-gray-700 mb-2">Cycle Colors:</h4>
+                <div class="grid grid-cols-7 gap-2 text-xs">
+                    <div class="p-2 rounded text-center font-medium bg-blue-200 border-blue-400 text-blue-900">Cycle 1</div>
+                    <div class="p-2 rounded text-center font-medium bg-green-200 border-green-400 text-green-900">Cycle 2</div>
+                    <div class="p-2 rounded text-center font-medium bg-purple-200 border-purple-400 text-purple-900">Cycle 3</div>
+                    <div class="p-2 rounded text-center font-medium bg-orange-200 border-orange-400 text-orange-900">Cycle 4</div>
+                    <div class="p-2 rounded text-center font-medium bg-pink-200 border-pink-400 text-pink-900">Cycle 5</div>
+                    <div class="p-2 rounded text-center font-medium bg-indigo-200 border-indigo-400 text-indigo-900">Cycle 6</div>
+                    <div class="p-2 rounded text-center font-medium bg-red-200 border-red-400 text-red-900">Cycle 7</div>
+                </div>
+            </div>
+            
+            <div class="text-xs text-gray-600">
+                <p><strong>Real-time sync:</strong> Changes are instantly visible to all users.</p>
+                <p><strong>Click any cycle number</strong> (future dates only) to adjust it. Changes will automatically update all following days.</p>
+                <p><strong>Day 0:</strong> Non-cycle school days and weekends. Next school day after Day 0 becomes Day 1.</p>
+                <p><strong>Default:</strong> First cycle begins Wednesday, June 18, 2025. Days before are Day 0.</p>
+                <p><strong>Red dots:</strong> Public holidays. <strong>Orange dots:</strong> School breaks (no cycle days).</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Modal -->
+<div id="scheduleModal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
+    <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeScheduleModal()"></div>
+    <div class="relative bg-white border-2 border-blue-300 rounded-2xl shadow-2xl overflow-hidden max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="bg-gradient-to-r from-blue-500 to-purple-500 text-white p-4 text-center">
+            <div class="text-lg font-bold">📚 Class Schedule</div>
+            <button onclick="closeScheduleModal()" class="absolute top-4 right-4 text-white hover:text-gray-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="p-6">
+            <div id="scheduleContent" class="space-y-6">
+                <!-- Schedule tables will be inserted here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cycle Day Selection Modal -->
+<div id="modal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
+    <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeModal()"></div>
+    <div class="relative bg-white border-2 border-blue-300 rounded-2xl shadow-2xl overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-500 to-purple-500 text-white p-4 text-center">
+            <div class="text-lg font-bold">Select Cycle Day</div>
+        </div>
+        
+        <div class="flex flex-col items-center p-6">
+            <button onclick="scrollSlot('up')" class="p-2 hover:bg-blue-100 rounded-full transition-colors mb-4">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                </svg>
+            </button>
+            
+            <div class="relative h-16 w-20 overflow-hidden">
+                <div id="slotContainer" class="flex flex-col items-center transition-transform duration-300 ease-in-out">
+                    <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">0</div>
+                    <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">1</div>
+                    <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">2</div>
+                    <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">3</div>
+                    <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">4</div>
+                    <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">5</div>
+                    <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">6</div>
+                    <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">7</div>
+                </div>
+            </div>
+            
+            <button onclick="scrollSlot('down')" class="p-2 hover:bg-blue-100 rounded-full transition-colors mt-4">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </button>
+            
+            <div class="flex space-x-4 mt-6">
+                <button onclick="selectCycleDay()" class="px-6 py-3 bg-blue-500 text-white rounded-lg text-lg font-medium hover:bg-blue-600 transition-colors">
+                    Select
+                </button>
+                <button onclick="closeModal()" class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg text-lg font-medium hover:bg-gray-400 transition-colors">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 </body>
-</html>
+</html> = getEffectiveCycleDay(nextSchoolDay);
+            const nextCycle = getCycleNumber(nextSchoolDay);
+            
+            const nextDay
