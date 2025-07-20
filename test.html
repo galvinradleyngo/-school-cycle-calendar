@@ -886,66 +886,6 @@
             const newCustomDays = { ...customCycleDays };
             newCustomDays[dateString] = newCycleDay;
             
-            // Recalculate subsequent days (same logic as before)
-            const allDates = [];
-            const startDate = new Date(2025, 5, 1);
-            const endDate = new Date(2026, 2, 31);
-            let currentDate = new Date(startDate);
-            
-            while (currentDate <= endDate) {
-                if (isSchoolDay(currentDate)) {
-                    const currentDateString = formatDateString(currentDate);
-                    allDates.push({
-                        date: new Date(currentDate),
-                        dateString: currentDateString
-                    });
-                }
-                currentDate.setDate(currentDate.getDate() + 1);
-            }
-            
-            const changedIndex = allDates.findIndex(item => item.dateString === dateString);
-            
-            if (changedIndex !== -1) {
-                for (let i = changedIndex + 1; i < allDates.length; i++) {
-                    const currentItem = allDates[i];
-                    
-                    let lastNonZeroDay = 0;
-                    for (let j = i - 1; j >= 0; j--) {
-                        const checkItem = allDates[j];
-                        let checkDay;
-                        
-                        if (newCustomDays.hasOwnProperty(checkItem.dateString)) {
-                            checkDay = newCustomDays[checkItem.dateString];
-                        } else if (customCycleDays.hasOwnProperty(checkItem.dateString)) {
-                            checkDay = customCycleDays[checkItem.dateString];
-                        } else {
-                            const june18 = new Date(2025, 5, 18);
-                            const checkDate = checkItem.date;
-                            const compareDate = new Date(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate());
-                            const compareJune18 = new Date(2025, 5, 18);
-                            
-                            if (compareDate < compareJune18) {
-                                checkDay = 0;
-                            } else {
-                                const schoolDaysSinceStart = getSchoolDaysSince(june18, checkDate);
-                                checkDay = (schoolDaysSinceStart % 7) + 1;
-                            }
-                        }
-                        
-                        if (checkDay !== 0) {
-                            lastNonZeroDay = checkDay;
-                            break;
-                        }
-                    }
-                    
-                    if (lastNonZeroDay === 0) {
-                        newCustomDays[currentItem.dateString] = 1;
-                    } else {
-                        newCustomDays[currentItem.dateString] = lastNonZeroDay === 7 ? 1 : lastNonZeroDay + 1;
-                    }
-                }
-            }
-            
             // Update local state immediately for instant visual feedback
             customCycleDays = newCustomDays;
             renderCalendar();
