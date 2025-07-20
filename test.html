@@ -652,9 +652,11 @@
             db.collection('calendar').doc('cycleDays')
                 .onSnapshot((doc) => {
                     if (doc.exists) {
-                        customCycleDays = doc.data() || {};
+                        const firebaseData = doc.data() || {};
+                        // Merge Firebase data with local customCycleDays, keeping local overrides
+                        customCycleDays = { ...firebaseData, ...customCycleDays };
                         updateSyncStatus(true);
-                        renderCalendar(); // This will update colors based on new cycle calculations
+                        renderCalendar();
                         updateTodayBanner();
                     }
                 }, (error) => {
@@ -666,11 +668,14 @@
         // Save to Firebase
         async function saveToFirebase(newCustomDays) {
             try {
+                console.log('Saving to Firebase:', newCustomDays);
                 await db.collection('calendar').doc('cycleDays').set(newCustomDays);
                 updateSyncStatus(true);
+                console.log('Successfully saved to Firebase');
             } catch (error) {
                 console.error('Error saving to Firebase:', error);
                 updateSyncStatus(false);
+                throw error; // Re-throw so handleCycleDayChange can handle it
             }
         }
 
@@ -885,16 +890,25 @@
 
         // Handle cycle day changes
         async function handleCycleDayChange(dateString, newCycleDay) {
-            const newCustomDays = { ...customCycleDays };
-            newCustomDays[dateString] = newCycleDay;
+            console.log(`Attempting to change ${dateString} to day ${newCycleDay}`);
             
-            // Update local state immediately for instant visual feedback
-            customCycleDays = newCustomDays;
+            // Update local state immediately
+            customCycleDays[dateString] = newCycleDay;
+            
+            // Update UI immediately
             renderCalendar();
             updateTodayBanner();
             
             // Save to Firebase
-            await saveToFirebase(newCustomDays);
+            try {
+                await saveToFirebase(customCycleDays);
+                console.log(`Successfully saved ${dateString} as day ${newCycleDay}`);
+            } catch (error) {
+                console.error('Error saving to Firebase:', error);
+                // Revert local change if save failed
+                delete customCycleDays[dateString];
+                renderCalendar();
+            }
         }
 
         // Update today's banner
