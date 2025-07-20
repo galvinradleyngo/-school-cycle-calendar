@@ -55,7 +55,8 @@
     </div>
 
     <script>
-        console.log('🎮 Game script starting - NEW CLEAN VERSION...');
+        console.log('🎮 Game script starting - CLEAN VERSION 3.1 - NO LEGACY CODE...');
+        console.log('🕐 Loaded at:', new Date().toISOString());
         
         // Firebase configuration
         const firebaseConfig = {
@@ -327,8 +328,11 @@
         }
         
         async function joinGame() {
-            console.log('🎯 Attempting to join game...');
-            const code = document.getElementById('game-code-input').value.toUpperCase().trim();
+            console.log('🎯 CLEAN VERSION - Attempting to join game...');
+            const codeInput = document.getElementById('game-code-input');
+            const code = codeInput ? codeInput.value.toUpperCase().trim() : '';
+            
+            console.log('Input code:', code);
             
             if (!code) {
                 showError('join-error', 'Please enter a game code');
@@ -340,19 +344,47 @@
                 return;
             }
             
-            console.log('Looking for game with code:', code);
+            console.log('🔍 Searching for game:', code);
             
-            // Try to load the game
-            const game = await loadGameFromFirebase(code);
-            
-            if (game) {
-                console.log('✅ GAME FOUND! Joining...');
-                gameCode = code;
-                currentGame = game;
-                showJoinSuccess();
-            } else {
+            try {
+                // Direct Firebase check with detailed logging
+                console.log('Making Firebase request...');
+                const url = `${firebaseConfig.databaseURL}/games/${code}.json`;
+                console.log('URL:', url);
+                
+                const response = await fetch(url);
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Response data:', data);
+                    console.log('Data type:', typeof data);
+                    console.log('Data is null:', data === null);
+                    
+                    if (data !== null) {
+                        console.log('✅ SUCCESS! Game found in Firebase');
+                        console.log('Game data:', JSON.stringify(data, null, 2));
+                        
+                        // Success!
+                        gameCode = code;
+                        currentGame = data;
+                        showJoinSuccess();
+                        return;
+                    } else {
+                        console.log('❌ Firebase returned null (game does not exist)');
+                    }
+                } else {
+                    console.log('❌ Firebase request failed:', response.status, response.statusText);
+                }
+                
+                // If we get here, game was not found
                 console.log('❌ Game not found');
                 showError('join-error', 'Game not found! Please check the code and try again.');
+                
+            } catch (error) {
+                console.error('❌ Error during join:', error);
+                showError('join-error', 'Error joining game: ' + error.message);
             }
         }
         
