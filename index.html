@@ -2,502 +2,1358 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gotten to Know You Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>School Cycle Calendar</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     <style>
+        /* Prevent double-tap zoom on mobile - comprehensive CSS */
+        html {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+            touch-action: manipulation;
+        }
+        
         body {
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            font-size: 24px;
+        
+        /* Allow text selection for specific elements */
+        .allow-select {
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
         }
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-left: 15px;
+        
+        /* Prevent double-tap zoom on buttons and interactive elements */
+        button, .cycle-button, [onclick] {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        
+        .slot-machine-option {
+            transition: all 0.3s ease;
         }
-        .fade-in {
-            animation: fadeIn 0.5s ease-in;
+        .slot-machine-selected {
+            transform: scale(1.25);
+            color: #2563eb;
+            background: #dbeafe;
+            border-radius: 8px;
+            border: 2px solid #3b82f6;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        .slot-machine-unselected {
+            transform: scale(0.75);
+            color: #9ca3af;
+        }
+        .cycle-button {
+            transition: all 0.2s ease;
+        }
+        .cycle-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
     </style>
 </head>
-<body>
-    <div id="app">
-        <div class="loading">
-            <div class="text-center">
-                <h1 class="text-4xl font-bold mb-4">🎮 Gotten to Know You!</h1>
+<body class="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
+    <!-- 🔥 REPLACE WITH YOUR FIREBASE CONFIG -->
+    <script>
+        // Class schedule data based on cycle days
+        const classSchedule = {
+            1: {
+                "8:10-8:50 AM\n1ST PERIOD": "ADVISORY\nPERIOD",
+                "8:50-9:30 AM\n2ND PERIOD": "MUSIC /\nARTS",
+                "9:30-10:10 AM": "HEALTH BREAK - RECESS",
+                "10:10-10:50 AM\n3RD PERIOD": "READING",
+                "10:50-11:30 AM\n4TH PERIOD": "LANGUAGE",
+                "11:30-12:10 PM\n5TH PERIOD": "MATH",
+                "12:10-12:50 PM": "HEALTH BREAK - LUNCH",
+                "12:50-1:30 PM\n6TH PERIOD": "SOCIAL\nSTUDIES",
+                "1:30-2:10 PM\n7TH PERIOD": "FILIPINO",
+                "1:30-2:50 PM\n8TH PERIOD": "SCIENCE"
+            },
+            2: {
+                "8:10-8:50 AM\n1ST PERIOD": "CHINESE",
+                "8:50-9:30 AM\n2ND PERIOD": "CLE",
+                "9:30-10:10 AM": "HEALTH BREAK - RECESS",
+                "10:10-10:50 AM\n3RD PERIOD": "FILIPINO",
+                "10:50-11:30 AM\n4TH PERIOD": "P.E.",
+                "11:30-12:10 PM\n5TH PERIOD": "SOCIAL\nSTUDIES",
+                "12:10-12:50 PM": "HEALTH BREAK - LUNCH",
+                "12:50-1:30 PM\n6TH PERIOD": "MATH",
+                "1:30-2:10 PM\n7TH PERIOD": "MATH",
+                "1:30-2:50 PM\n8TH PERIOD": "SCIENCE"
+            },
+            3: {
+                "8:10-8:50 AM\n1ST PERIOD": "MATH",
+                "8:50-9:30 AM\n2ND PERIOD": "MATH",
+                "9:30-10:10 AM": "HEALTH BREAK - RECESS",
+                "10:10-10:50 AM\n3RD PERIOD": "FILIPINO",
+                "10:50-11:30 AM\n4TH PERIOD": "LANGUAGE",
+                "11:30-12:10 PM\n5TH PERIOD": "LANGUAGE",
+                "12:10-12:50 PM": "HEALTH BREAK - LUNCH",
+                "12:50-1:30 PM\n6TH PERIOD": "SOCIAL\nSTUDIES",
+                "1:30-2:10 PM\n7TH PERIOD": "READING",
+                "1:30-2:50 PM\n8TH PERIOD": "CHINESE"
+            },
+            4: {
+                "8:10-8:50 AM\n1ST PERIOD": "SOCIAL\nSTUDIES",
+                "8:50-9:30 AM\n2ND PERIOD": "FILIPINO",
+                "9:30-10:10 AM": "HEALTH BREAK - RECESS",
+                "10:10-10:50 AM\n3RD PERIOD": "CHINESE",
+                "10:50-11:30 AM\n4TH PERIOD": "SCIENCE",
+                "11:30-12:10 PM\n5TH PERIOD": "CLE",
+                "12:10-12:50 PM": "HEALTH BREAK - LUNCH",
+                "12:50-1:30 PM\n6TH PERIOD": "COMPUTER",
+                "1:30-2:10 PM\n7TH PERIOD": "MUSIC /\nARTS",
+                "1:30-2:50 PM\n8TH PERIOD": "KAB"
+            },
+            5: {
+                "8:10-8:50 AM\n1ST PERIOD": "CLE",
+                "8:50-9:30 AM\n2ND PERIOD": "CHINESE",
+                "9:30-10:10 AM": "HEALTH BREAK - RECESS",
+                "10:10-10:50 AM\n3RD PERIOD": "CARESO",
+                "10:50-11:30 AM\n4TH PERIOD": "P.E.",
+                "11:30-12:10 PM\n5TH PERIOD": "FILIPINO",
+                "12:10-12:50 PM": "HEALTH BREAK - LUNCH",
+                "12:50-1:30 PM\n6TH PERIOD": "COMPUTER",
+                "1:30-2:10 PM\n7TH PERIOD": "SOCIAL\nSTUDIES",
+                "1:30-2:50 PM\n8TH PERIOD": "STUDY HALL"
+            },
+            6: {
+                "8:10-8:50 AM\n1ST PERIOD": "READING",
+                "8:50-9:30 AM\n2ND PERIOD": "READING",
+                "9:30-10:10 AM": "HEALTH BREAK - RECESS",
+                "10:10-10:50 AM\n3RD PERIOD": "LANGUAGE",
+                "10:50-11:30 AM\n4TH PERIOD": "LANGUAGE",
+                "11:30-12:10 PM\n5TH PERIOD": "CHINESE",
+                "12:10-12:50 PM": "HEALTH BREAK - LUNCH",
+                "12:50-1:30 PM\n6TH PERIOD": "SCIENCE",
+                "1:30-2:10 PM\n7TH PERIOD": "MATH",
+                "1:30-2:50 PM\n8TH PERIOD": "MATH"
+            },
+            7: {
+                "8:10-8:50 AM\n1ST PERIOD": "READING",
+                "8:50-9:30 AM\n2ND PERIOD": "READING",
+                "9:30-10:10 AM": "HEALTH BREAK - RECESS",
+                "10:10-10:50 AM\n3RD PERIOD": "MATH",
+                "10:50-11:30 AM\n4TH PERIOD": "MATH",
+                "11:30-12:10 PM\n5TH PERIOD": "CLE",
+                "12:10-12:50 PM": "HEALTH BREAK - LUNCH",
+                "12:50-1:30 PM\n6TH PERIOD": "CHINESE",
+                "1:30-2:10 PM\n7TH PERIOD": "SCIENCE",
+                "1:30-2:50 PM\n8TH PERIOD": ""
+            }
+        };
+
+        // Subject color mapping
+        const subjectColors = {
+            "ADVISORY\nPERIOD": "#FFA500", // Orange
+            "CHINESE": "#4169E1", // Royal Blue
+            "MATH": "#FFA500", // Orange
+            "SOCIAL\nSTUDIES": "#FFA500", // Orange
+            "CLE": "#4169E1", // Royal Blue
+            "READING": "#FFA500", // Orange
+            "MUSIC /\nARTS": "#FFA500", // Orange
+            "FILIPINO": "#90EE90", // Light Green
+            "LANGUAGE": "#90EE90", // Light Green
+            "P.E.": "#90EE90", // Light Green
+            "SCIENCE": "#DDA0DD", // Plum
+            "COMPUTER": "#DDA0DD", // Plum
+            "SOCIAL\nSTUDIES": "#DDA0DD", // Plum
+            "CARESO": "#90EE90", // Light Green
+            "KAB": "#696969", // Dark Gray
+            "STUDY HALL": "#696969", // Dark Gray
+            "HEALTH BREAK - RECESS": "#87CEEB", // Sky Blue
+            "HEALTH BREAK - LUNCH": "#87CEEB" // Sky Blue
+        };
+
+        // Get next school day (weekdays only)
+        function getNextSchoolDay(date) {
+            let nextDay = new Date(date);
+            do {
+                nextDay.setDate(nextDay.getDate() + 1);
+            } while (!isSchoolDay(nextDay));
+            return nextDay;
+        }
+
+        // Open schedule modal (tomorrow's schedule)
+        function openScheduleModal() {
+            const today = new Date(currentDate);
+            const tomorrow = getNextSchoolDay(today);
+            
+            const tomorrowCycleDay = getEffectiveCycleDay(tomorrow);
+            
+            const content = document.getElementById('scheduleContent');
+            content.innerHTML = '';
+            
+            // Only show tomorrow's schedule
+            if (tomorrowCycleDay > 0) {
+                content.appendChild(createScheduleTable(tomorrow, tomorrowCycleDay, 'Tomorrow'));
+            } else {
+                const noSchool = document.createElement('div');
+                noSchool.className = 'text-center text-gray-600 text-lg';
+                noSchool.innerHTML = '📅 No school tomorrow';
+                content.appendChild(noSchool);
+            }
+            
+            document.getElementById('scheduleModal').classList.remove('hidden');
+        }
+
+        // Open today's schedule modal
+        function openTodayScheduleModal() {
+            const today = new Date(currentDate);
+            const todayCycleDay = getEffectiveCycleDay(today);
+            
+            const content = document.getElementById('todayScheduleContent');
+            content.innerHTML = '';
+            
+            if (todayCycleDay > 0) {
+                content.appendChild(createScheduleTable(today, todayCycleDay, 'Today'));
+            } else {
+                const noSchool = document.createElement('div');
+                noSchool.className = 'text-center text-gray-600 text-lg';
+                noSchool.innerHTML = '📅 No cycle classes today';
+                content.appendChild(noSchool);
+            }
+            
+            document.getElementById('todayScheduleModal').classList.remove('hidden');
+        }
+
+        // Close today's schedule modal
+        function closeTodayScheduleModal() {
+            document.getElementById('todayScheduleModal').classList.add('hidden');
+        }
+
+        // Open all schedules modal
+        function openAllSchedulesModal() {
+            const content = document.getElementById('allSchedulesContent');
+            content.innerHTML = '';
+            
+            // Create schedules for all 7 days
+            for (let day = 1; day <= 7; day++) {
+                const container = document.createElement('div');
+                container.className = 'mb-6';
+                
+                const header = document.createElement('h3');
+                header.className = 'text-xl font-bold text-gray-800 mb-3';
+                header.textContent = `Day ${day} Schedule`;
+                container.appendChild(header);
+                
+                const table = document.createElement('table');
+                table.className = 'w-full border-collapse border border-gray-300 text-sm';
+                
+                const schedule = classSchedule[day];
+                
+                for (const [time, subject] of Object.entries(schedule)) {
+                    const row = document.createElement('tr');
+                    
+                    const timeCell = document.createElement('td');
+                    timeCell.className = 'border border-gray-300 p-3 font-semibold bg-gray-100 text-center min-w-[120px]';
+                    timeCell.style.whiteSpace = 'pre-line';
+                    timeCell.textContent = time;
+                    
+                    const subjectCell = document.createElement('td');
+                    subjectCell.className = 'border border-gray-300 p-3 text-center font-medium';
+                    subjectCell.style.whiteSpace = 'pre-line';
+                    subjectCell.textContent = subject;
+                    
+                    // Apply color based on time period and subject
+                    let backgroundColor = '#FFFFFF'; // Default white
+                    let textColor = 'black';
+                    
+                    // Chinese is always blue regardless of time
+                    if (subject === 'CHINESE') {
+                        backgroundColor = '#0061ff'; // New Blue
+                        textColor = 'white';
+                    }
+                    // 8:10-9:30 AM periods = Orange
+                    else if (time.includes('8:10-8:50') || time.includes('8:50-9:30')) {
+                        backgroundColor = '#ff8300'; // New Orange
+                        textColor = 'white';
+                    }
+                    // Breaks = Gray
+                    else if (time.includes('9:30-10:10') || time.includes('12:10-12:50')) {
+                        backgroundColor = '#D3D3D3'; // Light Gray
+                        textColor = 'black';
+                    }
+                    // 10:10-12:10 PM periods = Green  
+                    else if (time.includes('10:10-10:50') || time.includes('10:50-11:30') || time.includes('11:30-12:10')) {
+                        backgroundColor = '#0ebc45'; // New Green
+                        textColor = 'white';
+                    }
+                    // 12:50-2:50 PM periods = Purple
+                    else if (time.includes('12:50-1:30') || time.includes('1:30-2:10') || time.includes('1:30-2:50')) {
+                        backgroundColor = '#8c4ac6'; // New Purple
+                        textColor = 'white';
+                    }
+                    
+                    subjectCell.style.backgroundColor = backgroundColor;
+                    subjectCell.style.color = textColor;
+                    
+                    row.appendChild(timeCell);
+                    row.appendChild(subjectCell);
+                    table.appendChild(row);
+                }
+                
+                container.appendChild(table);
+                content.appendChild(container);
+            }
+            
+            document.getElementById('allSchedulesModal').classList.remove('hidden');
+        }
+
+        // Close all schedules modal
+        function closeAllSchedulesModal() {
+            document.getElementById('allSchedulesModal').classList.add('hidden');
+        }
+
+        // Close schedule modal
+        function closeScheduleModal() {
+            document.getElementById('scheduleModal').classList.add('hidden');
+        }
+
+        // Create schedule table
+        function createScheduleTable(date, cycleDay, dayLabel) {
+            const container = document.createElement('div');
+            container.className = 'mb-6';
+            
+            const dateStr = date.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            
+            const header = document.createElement('h3');
+            header.className = 'text-xl font-bold text-gray-800 mb-3';
+            header.textContent = `${dayLabel} - ${dateStr} (Day ${cycleDay})`;
+            container.appendChild(header);
+            
+            if (cycleDay === 0) {
+                const noClass = document.createElement('p');
+                noClass.className = 'text-gray-600';
+                noClass.textContent = 'No cycle classes today';
+                container.appendChild(noClass);
+                return container;
+            }
+            
+            const table = document.createElement('table');
+            table.className = 'w-full border-collapse border border-gray-300 text-sm';
+            
+            const schedule = classSchedule[cycleDay];
+            
+            for (const [time, subject] of Object.entries(schedule)) {
+                const row = document.createElement('tr');
+                
+                const timeCell = document.createElement('td');
+                timeCell.className = 'border border-gray-300 p-3 font-semibold bg-gray-100 text-center min-w-[120px]';
+                timeCell.style.whiteSpace = 'pre-line';
+                timeCell.textContent = time;
+                
+                const subjectCell = document.createElement('td');
+                subjectCell.className = 'border border-gray-300 p-3 text-center font-medium';
+                subjectCell.style.whiteSpace = 'pre-line';
+                subjectCell.textContent = subject;
+                
+                // Apply color based on time period and subject
+                let backgroundColor = '#FFFFFF'; // Default white
+                let textColor = 'black';
+                
+                // Chinese is always blue regardless of time
+                if (subject === 'CHINESE') {
+                    backgroundColor = '#0061ff'; // New Blue
+                    textColor = 'white';
+                }
+                // 8:10-9:30 AM periods = Orange
+                else if (time.includes('8:10-8:50') || time.includes('8:50-9:30')) {
+                    backgroundColor = '#ff8300'; // New Orange
+                    textColor = 'white';
+                }
+                // Breaks = Gray
+                else if (time.includes('9:30-10:10') || time.includes('12:10-12:50')) {
+                    backgroundColor = '#D3D3D3'; // Light Gray
+                    textColor = 'black';
+                }
+                // 10:10-12:10 PM periods = Green  
+                else if (time.includes('10:10-10:50') || time.includes('10:50-11:30') || time.includes('11:30-12:10')) {
+                    backgroundColor = '#0ebc45'; // New Green
+                    textColor = 'white';
+                }
+                // 12:50-2:50 PM periods = Purple
+                else if (time.includes('12:50-1:30') || time.includes('1:30-2:10') || time.includes('1:30-2:50')) {
+                    backgroundColor = '#8c4ac6'; // New Purple
+                    textColor = 'white';
+                }
+                
+                subjectCell.style.backgroundColor = backgroundColor;
+                subjectCell.style.color = textColor;
+                
+                row.appendChild(timeCell);
+                row.appendChild(subjectCell);
+                table.appendChild(row);
+            }
+            
+            container.appendChild(table);
+            return container;
+        }
+       const firebaseConfig = {
+  apiKey: "AIzaSyCi7jkj_qUfRpvdw4LBo3S-P1OGjt3ICLY",
+  authDomain: "school-calendar-f6b5d.firebaseapp.com",
+  projectId: "school-calendar-f6b5d",
+  storageBucket: "school-calendar-f6b5d.firebasestorage.app",
+  messagingSenderId: "151199046645",
+  appId: "1:151199046645:web:67ae312ad035227023debc"
+};
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+    </script>
+
+    <!-- Main Container -->
+    <div class="p-4">
+        <div class="max-w-4xl mx-auto">
+            
+            <!-- Header -->
+            <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div id="syncStatus" class="flex items-center space-x-2 px-3 py-1 rounded-full text-sm bg-green-100 text-green-700">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span>Synced</span>
+                    </div>
+                </div>
+                
                 <div class="flex items-center justify-center">
-                    <p class="text-xl">Loading game...</p>
-                    <div class="spinner"></div>
+                    <div class="text-center">
+                        <div class="flex items-center space-x-3 justify-center mb-2">
+                            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 002 2z"></path>
+                            </svg>
+                            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">School Cycle Calendar</h1>
+                        </div>
+                        <div class="bg-blue-100 rounded-xl p-4 inline-block">
+                            <div id="todayBanner" class="text-3xl font-bold text-blue-800">
+                                TODAY IS DAY 0, CYCLE 1
+                            </div>
+                            <div id="todayDate" class="text-blue-600 font-medium mt-1">
+                                Sunday, July 20, 2025
+                            </div>
+                            <button id="scheduleButton" onclick="openScheduleModal()" class="mt-3 px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors">
+                                📚 Prepare for Tomorrow
+                            </button>
+                            <div class="flex space-x-2 mt-2">
+                                <button onclick="openTodayScheduleModal()" class="px-3 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 transition-colors">
+                                    📖 Today's Schedule
+                                </button>
+                                <button onclick="openAllSchedulesModal()" class="px-3 py-2 bg-purple-500 text-white rounded-lg text-sm font-medium hover:bg-purple-600 transition-colors">
+                                    📋 All Schedules
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendar -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <!-- Month Navigation -->
+                <div class="bg-gradient-to-r from-blue-600 to-green-600 text-white p-4 flex items-center justify-between">
+                    <button id="prevMonth" class="p-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </button>
+                    <h2 id="monthYear" class="text-xl sm:text-2xl font-bold">July 2025</h2>
+                    <button id="nextMonth" class="p-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Days of Week Header -->
+                <div class="grid grid-cols-7 bg-gray-50">
+                    <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Sun</div>
+                    <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Mon</div>
+                    <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Tue</div>
+                    <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Wed</div>
+                    <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Thu</div>
+                    <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Fri</div>
+                    <div class="p-3 text-center font-semibold text-gray-700 border-b border-gray-200">Sat</div>
+                </div>
+
+                <!-- Calendar Grid -->
+                <div id="calendarGrid" class="grid grid-cols-7">
+                    <!-- Calendar days will be generated here -->
+                </div>
+            </div>
+
+            <!-- Legend -->
+            <div class="bg-white rounded-2xl shadow-xl p-6 mt-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">Legend</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 text-sm mb-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-4 h-4 bg-yellow-200 border-2 border-yellow-400 rounded"></div>
+                        <span>Today</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-4 h-4 bg-gray-100 rounded opacity-60"></div>
+                        <span>Past Dates</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-4 h-4 bg-gray-200 rounded"></div>
+                        <span>Day 0 (No Cycle)</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-4 h-4 bg-gray-100 rounded"></div>
+                        <span>Weekends</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-4 h-4 bg-red-50 relative rounded">
+                            <div class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></div>
+                        </div>
+                        <span>Public Holidays</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-4 h-4 bg-gray-100 relative rounded">
+                            <div class="absolute top-0 left-0 w-2 h-2 bg-orange-500 rounded-full"></div>
+                        </div>
+                        <span>School Breaks</span>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h4 class="font-semibold text-gray-700 mb-2">Cycle Colors:</h4>
+                    <div class="grid grid-cols-7 gap-2 text-xs">
+                        <div class="p-2 rounded text-center font-medium bg-blue-200 border-blue-400 text-blue-900">Cycle 1</div>
+                        <div class="p-2 rounded text-center font-medium bg-green-200 border-green-400 text-green-900">Cycle 2</div>
+                        <div class="p-2 rounded text-center font-medium bg-purple-200 border-purple-400 text-purple-900">Cycle 3</div>
+                        <div class="p-2 rounded text-center font-medium bg-orange-200 border-orange-400 text-orange-900">Cycle 4</div>
+                        <div class="p-2 rounded text-center font-medium bg-pink-200 border-pink-400 text-pink-900">Cycle 5</div>
+                        <div class="p-2 rounded text-center font-medium bg-indigo-200 border-indigo-400 text-indigo-900">Cycle 6</div>
+                        <div class="p-2 rounded text-center font-medium bg-red-200 border-red-400 text-red-900">Cycle 7</div>
+                    </div>
+                </div>
+                
+                <div class="text-xs text-gray-600">
+                    <p><strong>Real-time sync:</strong> Changes are instantly visible to all users.</p>
+                    <p><strong>Click any cycle number</strong> (future dates only) to adjust it. Changes will automatically update all following days.</p>
+                    <p><strong>Past dates</strong> are greyed out and cannot be modified.</p>
+                    <p><strong>Day 0:</strong> Non-cycle school days. Includes weekends and special dates like July 18, 2025.</p>
+                    <p><strong>Default:</strong> July 21, 2025 starts as Day 1, Cycle 3. Weekends and July 18 are Day 0.</p>
+                    <p><strong>Red dots:</strong> Public holidays. <strong>Orange dots:</strong> School breaks (no cycle days).</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Schedule Modal -->
+    <div id="todayScheduleModal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
+        <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeTodayScheduleModal()"></div>
+        <div class="relative bg-white border-2 border-green-300 rounded-2xl shadow-2xl overflow-hidden max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="bg-gradient-to-r from-green-500 to-blue-500 text-white p-4 text-center">
+                <div class="text-lg font-bold">📖 Today's Class Schedule</div>
+                <button onclick="closeTodayScheduleModal()" class="absolute top-4 right-4 text-white hover:text-gray-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <div id="todayScheduleContent" class="space-y-6">
+                    <!-- Today's schedule will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- All Schedules Modal -->
+    <div id="allSchedulesModal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
+        <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeAllSchedulesModal()"></div>
+        <div class="relative bg-white border-2 border-purple-300 rounded-2xl shadow-2xl overflow-hidden max-w-7xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-4 text-center">
+                <div class="text-lg font-bold">📋 All Class Schedules (Days 1-7)</div>
+                <button onclick="closeAllSchedulesModal()" class="absolute top-4 right-4 text-white hover:text-gray-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <div id="allSchedulesContent" class="space-y-8">
+                    <!-- All schedules will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tomorrow's Schedule Modal -->
+    <div id="scheduleModal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
+        <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeScheduleModal()"></div>
+        <div class="relative bg-white border-2 border-blue-300 rounded-2xl shadow-2xl overflow-hidden max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="bg-gradient-to-r from-blue-500 to-purple-500 text-white p-4 text-center">
+                <div class="text-lg font-bold">📚 Tomorrow's Class Schedule</div>
+                <button onclick="closeScheduleModal()" class="absolute top-4 right-4 text-white hover:text-gray-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <div id="scheduleContent" class="space-y-6">
+                    <!-- Schedule tables will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Cycle Day Selection Modal -->
+    <div id="modal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
+        <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeModal()"></div>
+        <div class="relative bg-white border-2 border-blue-300 rounded-2xl shadow-2xl overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-500 to-purple-500 text-white p-4 text-center">
+                <div class="text-lg font-bold">Select Cycle Day</div>
+            </div>
+            
+            <div class="flex flex-col items-center p-6">
+                <button onclick="scrollSlot('up')" class="p-2 hover:bg-blue-100 rounded-full transition-colors mb-4">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                    </svg>
+                </button>
+                
+                <div class="relative h-16 w-20 overflow-hidden">
+                    <div id="slotContainer" class="flex flex-col items-center transition-transform duration-300 ease-in-out">
+                        <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">0</div>
+                        <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">1</div>
+                        <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">2</div>
+                        <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">3</div>
+                        <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">4</div>
+                        <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">5</div>
+                        <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">6</div>
+                        <div class="slot-machine-option h-10 w-20 flex items-center justify-center text-3xl font-bold">7</div>
+                    </div>
+                </div>
+                
+                <button onclick="scrollSlot('down')" class="p-2 hover:bg-blue-100 rounded-full transition-colors mt-4">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+                
+                <div class="flex space-x-4 mt-6">
+                    <button onclick="selectCycleDay()" class="px-6 py-3 bg-blue-500 text-white rounded-lg text-lg font-medium hover:bg-blue-600 transition-colors">
+                        Select
+                    </button>
+                    <button onclick="closeModal()" class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg text-lg font-medium hover:bg-gray-400 transition-colors">
+                        Cancel
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        console.log('🎮 Game script starting - CLEAN VERSION 3.1 - NO LEGACY CODE...');
-        console.log('🕐 Loaded at:', new Date().toISOString());
+        // Prevent double-tap zoom - simplified and more aggressive approach
+        let lastTouchEnd = 0;
         
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyDU32POTx2DzJoijpyMiv-yZHRJQAH1foA",
-            authDomain: "gotten-to-know-you.firebaseapp.com",
-            databaseURL: "https://gotten-to-know-you-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "gotten-to-know-you",
-            storageBucket: "gotten-to-know-you.firebasestorage.app",
-            messagingSenderId: "553283770730",
-            appId: "1:553283770730:web:41c81f52de885116b0ed13"
-        };
-        
-        // Game state variables
-        let gameState = 'menu';
-        let gameCode = '';
-        let playerName = '';
-        let currentGame = null;
-        let gameQuestions = [];
-        let currentQuestion = 0;
-        let score = 0;
-        let timeLeft = 15;
-        let timerInterval = null;
-        let pollInterval = null;
-        let gameDatabase = {};
-        let isFirebaseAvailable = true;
-        
-        // CLEAN Firebase operations
-        async function saveGameToFirebase(code, data) {
-            console.log('🔥 SAVING to Firebase:', code);
-            try {
-                const response = await fetch(`${firebaseConfig.databaseURL}/games/${code}.json`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+        document.addEventListener('touchend', function (event) {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, { passive: false });
+
+        // Prevent all gestures
+        document.addEventListener('gesturestart', function (e) {
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('gesturechange', function (e) {
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('gestureend', function (e) {
+            e.preventDefault();
+        }, { passive: false });
+
+        // Prevent context menu on long press
+        document.addEventListener('contextmenu', function (e) {
+            e.preventDefault();
+        }, { passive: false });
+
+        // Global state
+        let currentDate = new Date();
+        let currentMonth = 6; // July (0-indexed)
+        let currentYear = 2025;
+        let customCycleDays = {};
+        let selectedSlotValue = 0;
+        let activeModalDate = null;
+        let isOnline = true;
+
+        // Philippine holidays and school breaks
+        const philippineHolidays = [
+            '2025-06-12', '2025-08-21', '2025-08-26', '2025-11-01', '2025-11-02',
+            '2025-11-30', '2025-12-25', '2025-12-30', '2025-12-31', '2026-01-01',
+            '2026-02-25', '2026-04-09', '2026-04-17', '2026-04-18', '2026-04-19'
+        ];
+
+        // School breaks (no cycle days)
+        const schoolBreaks = [
+            // September 15-16, 2025
+            '2025-09-15', '2025-09-16',
+            // October 27-31, 2025
+            '2025-10-27', '2025-10-28', '2025-10-29', '2025-10-30', '2025-10-31',
+            // November 3, 2025
+            '2025-11-03',
+            // December 22, 2025 to January 5, 2026
+            '2025-12-22', '2025-12-23', '2025-12-24', '2025-12-26', '2025-12-27',
+            '2025-12-28', '2025-12-29', '2026-01-02', '2026-01-03', '2026-01-04',
+            '2026-01-05'
+        ];
+
+        // Special Day 0 dates (including July 18)
+        const specialDay0Dates = [
+            '2025-07-18' // July 18, 2025 is specifically Day 0
+        ];
+
+        const months = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+
+        const cycleColors = [
+            'bg-blue-200 border-blue-400 text-blue-900 shadow-blue-100',
+            'bg-green-200 border-green-400 text-green-900 shadow-green-100',
+            'bg-purple-200 border-purple-400 text-purple-900 shadow-purple-100',
+            'bg-orange-200 border-orange-400 text-orange-900 shadow-orange-100',
+            'bg-pink-200 border-pink-400 text-pink-900 shadow-pink-100',
+            'bg-indigo-200 border-indigo-400 text-indigo-900 shadow-indigo-100',
+            'bg-red-200 border-red-400 text-red-900 shadow-red-100',
+        ];
+
+        // Firebase real-time listener
+        function setupFirebaseListener() {
+            db.collection('calendar').doc('cycleDays')
+                .onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const firebaseData = doc.data() || {};
+                        // Only update if the data is actually different to avoid overriding local changes
+                        if (JSON.stringify(customCycleDays) !== JSON.stringify(firebaseData)) {
+                            customCycleDays = firebaseData;
+                            renderCalendar();
+                            updateTodayBanner();
+                        }
+                        updateSyncStatus(true);
+                    } else {
+                        // Document doesn't exist, create it with current data
+                        if (Object.keys(customCycleDays).length > 0) {
+                            saveToFirebase(customCycleDays);
+                        }
+                        updateSyncStatus(true);
+                    }
+                }, (error) => {
+                    console.error('Firebase sync error:', error);
+                    updateSyncStatus(false);
                 });
-                
-                if (response.ok) {
-                    console.log('✅ Successfully saved to Firebase');
-                    return true;
-                } else {
-                    console.log('❌ Firebase save failed:', response.status);
-                    return false;
-                }
-            } catch (error) {
-                console.log('❌ Firebase save error:', error.message);
-                return false;
-            }
         }
-        
-        async function loadGameFromFirebase(code) {
-            console.log('🔍 LOADING from Firebase:', code);
+
+        // Save to Firebase
+        async function saveToFirebase(newCustomDays) {
             try {
-                const response = await fetch(`${firebaseConfig.databaseURL}/games/${code}.json`);
-                console.log('📡 Firebase response status:', response.status, response.ok);
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('📦 Firebase returned:', data);
-                    
-                    // If we got actual data (not null), return it
-                    if (data !== null && typeof data === 'object') {
-                        console.log('✅ FOUND game in Firebase!');
-                        // Ensure it has a code property
-                        if (!data.code) {
-                            data.code = code;
-                        }
-                        return data;
-                    } else {
-                        console.log('❌ Firebase returned null (game does not exist)');
-                    }
-                }
+                // Temporarily disable the listener to prevent conflicts
+                await db.collection('calendar').doc('cycleDays').set(newCustomDays, { merge: true });
+                console.log('Successfully saved to Firebase:', newCustomDays);
+                updateSyncStatus(true);
             } catch (error) {
-                console.log('❌ Firebase load error:', error.message);
+                console.error('Error saving to Firebase:', error);
+                
+                // Show user-friendly error message
+                if (error.code === 'permission-denied') {
+                    alert('Permission denied: Firebase security rules need to be configured to allow writes. Please check your Firebase security rules.');
+                } else if (error.code === 'unavailable') {
+                    alert('Firebase is currently unavailable. Changes will be saved locally and synced when connection is restored.');
+                } else {
+                    alert(`Error saving changes: ${error.message}. Changes will be saved locally.`);
+                }
+                
+                updateSyncStatus(false);
+                // Don't throw error - keep local changes even if Firebase save fails
             }
-            return null;
         }
-        
+
+        // Update sync status indicator
+        function updateSyncStatus(online) {
+            isOnline = online;
+            const statusEl = document.getElementById('syncStatus');
+            if (online) {
+                statusEl.className = 'flex items-center space-x-2 px-3 py-1 rounded-full text-sm bg-green-100 text-green-700';
+                statusEl.innerHTML = `
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span>Synced ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                `;
+            } else {
+                statusEl.className = 'flex items-center space-x-2 px-3 py-1 rounded-full text-sm bg-red-100 text-red-700';
+                statusEl.innerHTML = `
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span>Offline</span>
+                `;
+            }
+        }
+
         // Utility functions
-        function generateGameCode() {
-            return Math.random().toString(36).substr(2, 6).toUpperCase();
+        function isWeekend(date) {
+            const day = date.getDay();
+            return day === 0 || day === 6; // Sunday or Saturday
         }
-        
-        function showError(elementId, message) {
-            console.log('🚨 Error:', message);
-            const errorEl = document.getElementById(elementId);
-            if (errorEl) {
-                errorEl.textContent = message;
-                errorEl.classList.remove('hidden');
-                setTimeout(() => {
-                    if (errorEl) errorEl.classList.add('hidden');
-                }, 8000);
-            } else {
-                alert('Error: ' + message);
-            }
+
+        function isPastDate(date) {
+            const today = new Date(currentDate);
+            today.setHours(23, 59, 59, 999);
+            const compareDate = new Date(date);
+            compareDate.setHours(23, 59, 59, 999);
+            return compareDate < today;
         }
-        
-        // Render main menu
-        function renderMenu() {
-            console.log('🏠 Rendering main menu');
-            const app = document.getElementById('app');
-            app.innerHTML = `
-                <div class="min-h-screen bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 flex items-center justify-center p-4 fade-in">
-                    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
-                        <div class="mb-8">
-                            <div class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4 text-4xl">
-                                👥
-                            </div>
-                            <h1 class="text-3xl font-bold text-gray-800 mb-2">Gotten to Know You!</h1>
-                            <p class="text-gray-600">A fun classroom game to learn about each other</p>
-                        </div>
-                        
-                        <div class="space-y-4">
-                            <button onclick="startTeacherFlow()" class="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold py-4 px-6 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg">
-                                🎓 I'm a Teacher
-                            </button>
-                            
-                            <button onclick="startStudentFlow()" class="w-full bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white font-semibold py-4 px-6 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg">
-                                🎒 I'm a Student
-                            </button>
-                            
-                            <button onclick="testFirebaseConnection()" class="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-3 px-6 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg text-sm">
-                                🔥 Test Firebase
-                            </button>
-                        </div>
-                        
-                        <div class="mt-6 text-xs text-gray-500">
-                            v3.0 - Clean Firebase Edition
-                        </div>
-                    </div>
-                </div>
-            `;
+
+        function isHoliday(dateString) {
+            return philippineHolidays.includes(dateString);
         }
-        
-        // Teacher flow
-        function startTeacherFlow() {
-            console.log('👨‍🏫 Starting teacher flow');
-            const app = document.getElementById('app');
-            app.innerHTML = `
-                <div class="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 flex items-center justify-center p-4 fade-in">
-                    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Create New Game</h2>
-                        <p class="text-gray-600 mb-8">Click below to create a new game and get your game code!</p>
-                        
-                        <button onclick="createGame()" class="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold py-4 px-6 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg mb-4">
-                            🎮 Create Game
-                        </button>
-                        
-                        <button onclick="renderMenu()" class="w-full bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-3 px-6 rounded-2xl transition-all duration-300">
-                            ← Back to Menu
-                        </button>
-                        
-                        <div id="create-error" class="hidden mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-2xl"></div>
-                    </div>
-                </div>
-            `;
+
+        function isSchoolBreak(dateString) {
+            return schoolBreaks.includes(dateString);
         }
-        
-        async function createGame() {
-            console.log('🎯 Creating new game...');
+
+        function isSpecialDay0(dateString) {
+            return specialDay0Dates.includes(dateString);
+        }
+
+        function isSchoolDay(date) {
+            const dateString = formatDateString(date);
+            // Weekends are always Day 0, not school days for cycle purposes
+            if (isWeekend(date)) return false;
+            // July 18 is specifically not a school day for cycle purposes
+            if (isSpecialDay0(dateString)) return false;
+            // But weekdays that aren't holidays or breaks are school days
+            return !isHoliday(dateString) && !isSchoolBreak(dateString);
+        }
+
+        function formatDateString(date) {
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+
+        function getSchoolDaysSince(startDate, endDate) {
+            let count = 0;
+            let currentDate = new Date(startDate);
             
-            // Generate game code
-            gameCode = generateGameCode();
-            console.log('Generated code:', gameCode);
-            
-            // Create game object
-            currentGame = {
-                code: gameCode,
-                players: [],
-                isStarted: false,
-                gamePhase: 'waiting',
-                createdAt: new Date().toISOString(),
-                createdBy: 'teacher'
-            };
-            
-            // Save to Firebase
-            const saved = await saveGameToFirebase(gameCode, currentGame);
-            if (saved) {
-                // Verify by loading back
-                const verification = await loadGameFromFirebase(gameCode);
-                if (verification) {
-                    console.log('✅ Game created and verified!');
-                    showTeacherDashboard();
-                } else {
-                    console.log('❌ Game creation verification failed');
-                    showError('create-error', 'Failed to verify game creation');
+            while (currentDate <= endDate) {
+                if (isSchoolDay(currentDate)) {
+                    count++;
                 }
-            } else {
-                showError('create-error', 'Failed to create game');
-            }
-        }
-        
-        function showTeacherDashboard() {
-            const app = document.getElementById('app');
-            app.innerHTML = `
-                <div class="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 p-4 fade-in">
-                    <div class="max-w-4xl mx-auto">
-                        <div class="bg-white rounded-3xl shadow-2xl p-8">
-                            <div class="text-center mb-8">
-                                <h2 class="text-3xl font-bold text-gray-800 mb-4">Teacher Dashboard</h2>
-                                <div class="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-6 py-3 rounded-2xl inline-block text-xl font-bold mb-4">
-                                    Game Code: ${gameCode}
-                                </div>
-                                
-                                <div class="bg-green-100 border border-green-400 text-green-800 px-4 py-2 rounded-2xl mb-4">
-                                    ✅ Game Active - Students can join now!
-                                </div>
-                                
-                                <div class="mt-6 bg-blue-100 border border-blue-400 text-blue-800 px-4 py-3 rounded-2xl">
-                                    <strong>📱 Students join at: galvinradleyngo.github.io/gotten-to-know-you-game/</strong>
-                                    <br />
-                                    <div class="mt-3 space-x-2">
-                                        <button onclick="copyInstructions()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold">
-                                            📋 Copy Instructions
-                                        </button>
-                                        <button onclick="copyGameLink()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold">
-                                            🔗 Copy Game Link
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="text-center">
-                                <p class="text-lg text-gray-600 mb-4">Game created successfully!</p>
-                                <p class="text-sm text-gray-500">Students can now join using code: <strong>${gameCode}</strong></p>
-                                
-                                <button onclick="renderMenu()" class="mt-6 bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-3 px-6 rounded-2xl transition-all duration-300">
-                                    ← Back to Menu
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-        
-        // Student flow
-        function startStudentFlow() {
-            console.log('👨‍🎓 Starting student flow');
-            const app = document.getElementById('app');
-            app.innerHTML = `
-                <div class="min-h-screen bg-gradient-to-br from-green-600 via-teal-600 to-blue-600 flex items-center justify-center p-4 fade-in">
-                    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Join Game</h2>
-                        
-                        <div class="space-y-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Game Code</label>
-                                <input type="text" id="game-code-input" placeholder="Enter game code" class="w-full px-4 py-3 border-2 border-gray-300 rounded-2xl focus:border-blue-500 focus:outline-none text-center text-lg font-semibold uppercase" maxlength="6">
-                            </div>
-                            
-                            <button onclick="joinGame()" class="w-full bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white font-semibold py-4 px-6 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg">
-                                🎯 Join Game
-                            </button>
-                            
-                            <div id="join-error" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-2xl"></div>
-                        </div>
-                        
-                        <button onclick="renderMenu()" class="w-full bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-3 px-6 rounded-2xl transition-all duration-300 mt-4">
-                            ← Back to Menu
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            // Auto-uppercase input
-            document.getElementById('game-code-input').addEventListener('input', (e) => {
-                e.target.value = e.target.value.toUpperCase();
-            });
-        }
-        
-        async function joinGame() {
-            console.log('🎯 CLEAN VERSION - Attempting to join game...');
-            const codeInput = document.getElementById('game-code-input');
-            const code = codeInput ? codeInput.value.toUpperCase().trim() : '';
-            
-            console.log('Input code:', code);
-            
-            if (!code) {
-                showError('join-error', 'Please enter a game code');
-                return;
+                currentDate.setDate(currentDate.getDate() + 1);
             }
             
-            if (code.length !== 6) {
-                showError('join-error', 'Game code must be 6 characters long');
-                return;
+            return count - 1;
+        }
+
+        function getEffectiveCycleDay(date) {
+            const dateString = formatDateString(date);
+            
+            // Check if there's a custom setting for this date - this takes priority over everything
+            if (customCycleDays.hasOwnProperty(dateString)) {
+                return customCycleDays[dateString];
             }
             
-            console.log('🔍 Searching for game:', code);
+            // All weekends are Day 0
+            if (isWeekend(date)) {
+                return 0;
+            }
             
-            try {
-                // Direct Firebase check with detailed logging
-                console.log('Making Firebase request...');
-                const url = `${firebaseConfig.databaseURL}/games/${code}.json`;
-                console.log('URL:', url);
+            // July 18, 2025 is specifically Day 0
+            if (isSpecialDay0(dateString)) {
+                return 0;
+            }
+            
+            // Holidays and school breaks are Day 0
+            if (isHoliday(dateString) || isSchoolBreak(dateString)) {
+                return 0;
+            }
+            
+            // Start the cycle from July 21, 2025 (Monday after July 18) as Day 1 BY DEFAULT
+            const july21 = new Date(2025, 6, 21); // July 21, 2025
+            const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const compareJuly21 = new Date(2025, 6, 21);
+            
+            // Before July 21, everything is Day 0
+            if (compareDate < compareJuly21) {
+                return 0;
+            }
+            
+            // July 21 specifically should be Day 1 BY DEFAULT (but can be overridden by customCycleDays)
+            if (dateString === '2025-07-21') {
+                return 1;
+            }
+            
+            const schoolDaysSinceStart = getSchoolDaysSince(july21, date);
+            return (schoolDaysSinceStart % 7) + 1;
+        }
+
+        function getCycleNumber(date) {
+            const cycleDay = getEffectiveCycleDay(date);
+            
+            if (cycleDay === 0) return 0;
+            
+            const july21 = new Date(2025, 6, 21);
+            if (date < july21) return 0;
+            
+            // July 21, 2025 is Day 1, Cycle 3
+            const dateString = formatDateString(date);
+            if (dateString === '2025-07-21') {
+                return 3;
+            }
+            
+            // Calculate cycle number based on completed cycles from July 21
+            const schoolDays = [];
+            let currentCheckDate = new Date(july21);
+            
+            while (currentCheckDate <= date) {
+                if (isSchoolDay(currentCheckDate)) {
+                    const checkDateString = formatDateString(currentCheckDate);
+                    const checkCycleDay = getEffectiveCycleDay(currentCheckDate);
+                    schoolDays.push({
+                        date: new Date(currentCheckDate),
+                        dateString: checkDateString,
+                        cycleDay: checkCycleDay
+                    });
+                }
+                currentCheckDate.setDate(currentCheckDate.getDate() + 1);
+            }
+            
+            // Start with cycle 3 since July 21 is Cycle 3
+            let cycleNumber = 3;
+            let lastNonZeroDay = 0;
+            
+            for (let i = 0; i < schoolDays.length; i++) {
+                const day = schoolDays[i];
                 
-                const response = await fetch(url);
-                console.log('Response status:', response.status);
-                console.log('Response ok:', response.ok);
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('Response data:', data);
-                    console.log('Data type:', typeof data);
-                    console.log('Data is null:', data === null);
-                    
-                    if (data !== null) {
-                        console.log('✅ SUCCESS! Game found in Firebase');
-                        console.log('Game data:', JSON.stringify(data, null, 2));
-                        
-                        // Success!
-                        gameCode = code;
-                        currentGame = data;
-                        showJoinSuccess();
-                        return;
-                    } else {
-                        console.log('❌ Firebase returned null (game does not exist)');
+                if (day.cycleDay === 0) {
+                    lastNonZeroDay = 0; // Reset for next cycle
+                    if (formatDateString(day.date) === formatDateString(date)) {
+                        return 0;
                     }
-                } else {
-                    console.log('❌ Firebase request failed:', response.status, response.statusText);
+                    continue;
                 }
                 
-                // If we get here, game was not found
-                console.log('❌ Game not found');
-                showError('join-error', 'Game not found! Please check the code and try again.');
-                
-            } catch (error) {
-                console.error('❌ Error during join:', error);
-                showError('join-error', 'Error joining game: ' + error.message);
-            }
-        }
-        
-        function showJoinSuccess() {
-            const app = document.getElementById('app');
-            app.innerHTML = `
-                <div class="min-h-screen bg-gradient-to-br from-green-600 via-teal-600 to-blue-600 flex items-center justify-center p-4 fade-in">
-                    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
-                        <div class="text-6xl mb-4 animate-bounce">🎉</div>
-                        <h2 class="text-3xl font-bold text-gray-800 mb-4">Success!</h2>
-                        <p class="text-lg text-gray-600 mb-6">You've successfully joined the game!</p>
-                        <p class="text-sm text-gray-500 mb-6">Game Code: <strong>${gameCode}</strong></p>
-                        <p class="text-sm text-gray-500">Multi-device joining is working! 🔥</p>
-                        
-                        <button onclick="renderMenu()" class="mt-6 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg">
-                            🏠 Back to Menu
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-        
-        // Test Firebase connection
-        async function testFirebaseConnection() {
-            console.log('🧪 Testing Firebase connection...');
-            try {
-                // Test basic connection
-                const testResponse = await fetch(`${firebaseConfig.databaseURL}/.json`);
-                console.log('Basic connection:', testResponse.ok);
-                
-                // Test games endpoint
-                const gamesResponse = await fetch(`${firebaseConfig.databaseURL}/games.json`);
-                const gamesData = await gamesResponse.json();
-                console.log('Games in Firebase:', gamesData ? Object.keys(gamesData) : 'None');
-                
-                if (testResponse.ok && gamesResponse.ok) {
-                    alert(`✅ Firebase is working!\n\nGames found: ${gamesData ? Object.keys(gamesData).length : 0}\nCodes: ${gamesData ? Object.keys(gamesData).join(', ') : 'None'}`);
-                } else {
-                    alert('❌ Firebase test failed!');
+                // If current day is 1 and we had a previous day (not the very first day)
+                // and the previous day wasn't 0, then we're starting a new cycle
+                if (day.cycleDay === 1 && lastNonZeroDay > 0 && lastNonZeroDay !== 0 && day.dateString !== '2025-07-21') {
+                    cycleNumber++;
                 }
-            } catch (error) {
-                console.error('Firebase test error:', error);
-                alert('❌ Firebase test failed: ' + error.message);
+                
+                lastNonZeroDay = day.cycleDay;
+                
+                if (formatDateString(day.date) === formatDateString(date)) {
+                    return cycleNumber;
+                }
             }
+            
+            return cycleNumber;
         }
-        
-        // Global functions for onclick handlers
-        window.startTeacherFlow = startTeacherFlow;
-        window.startStudentFlow = startStudentFlow;
-        window.testFirebaseConnection = testFirebaseConnection;
-        window.createGame = createGame;
-        window.joinGame = joinGame;
-        window.renderMenu = renderMenu;
-        
-        window.copyInstructions = function() {
-            const message = `🎮 Join our class game!\n\n1. Go to: https://galvinradleyngo.github.io/gotten-to-know-you-game/\n2. Click "I'm a Student"\n3. Enter code: ${gameCode}`;
-            navigator.clipboard.writeText(message).then(() => {
-                alert('✅ Instructions copied to clipboard!');
-            });
-        };
-        
-        window.copyGameLink = function() {
-            const link = `https://galvinradleyngo.github.io/gotten-to-know-you-game/?code=${gameCode}`;
-            navigator.clipboard.writeText(link).then(() => {
-                alert('✅ Game link copied to clipboard!');
-            });
-        };
-        
-        // Initialize the game
-        async function init() {
-            console.log('🚀 Initializing clean Firebase game...');
+
+        function getDaysInMonth(month, year) {
+            return new Date(year, month + 1, 0).getDate();
+        }
+
+        function getFirstDayOfMonth(month, year) {
+            return new Date(year, month, 1).getDay();
+        }
+
+        // Modal functions
+        function openModal(dateString, currentCycleDay) {
+            activeModalDate = dateString;
+            selectedSlotValue = currentCycleDay;
+            updateSlotDisplay();
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+            activeModalDate = null;
+        }
+
+        function scrollSlot(direction) {
+            const options = [0, 1, 2, 3, 4, 5, 6, 7];
+            const currentIndex = options.indexOf(selectedSlotValue);
             
-            // Test Firebase connectivity
-            try {
-                const response = await fetch(`${firebaseConfig.databaseURL}/.json`);
-                isFirebaseAvailable = response.ok;
-                console.log('Firebase available:', isFirebaseAvailable);
-            } catch (error) {
-                console.log('Firebase unavailable:', error.message);
-                isFirebaseAvailable = false;
-            }
-            
-            // Check for game code in URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const codeParam = urlParams.get('code');
-            
-            if (codeParam) {
-                console.log('Found game code in URL:', codeParam);
-                gameCode = codeParam.toUpperCase();
-                // Auto-start student flow with pre-filled code
-                setTimeout(() => {
-                    startStudentFlow();
-                    setTimeout(() => {
-                        const input = document.getElementById('game-code-input');
-                        if (input) {
-                            input.value = gameCode;
-                        }
-                    }, 100);
-                }, 100);
+            if (direction === 'up') {
+                selectedSlotValue = currentIndex > 0 ? options[currentIndex - 1] : options[options.length - 1];
             } else {
-                // Start with menu
-                setTimeout(() => {
-                    renderMenu();
-                }, 500);
+                selectedSlotValue = currentIndex < options.length - 1 ? options[currentIndex + 1] : options[0];
+            }
+            
+            updateSlotDisplay();
+        }
+
+        function updateSlotDisplay() {
+            const container = document.getElementById('slotContainer');
+            const options = [0, 1, 2, 3, 4, 5, 6, 7];
+            const currentIndex = options.indexOf(selectedSlotValue);
+            
+            container.style.transform = `translateY(${-currentIndex * 40 + 20}px)`;
+            
+            // Update styling
+            const slotOptions = container.querySelectorAll('.slot-machine-option');
+            slotOptions.forEach((option, index) => {
+                if (index === currentIndex) {
+                    option.className = 'slot-machine-option slot-machine-selected h-10 w-20 flex items-center justify-center text-3xl font-bold';
+                } else {
+                    option.className = 'slot-machine-option slot-machine-unselected h-10 w-20 flex items-center justify-center text-3xl font-bold';
+                }
+            });
+        }
+
+        async function selectCycleDay() {
+            if (activeModalDate) {
+                await handleCycleDayChange(activeModalDate, selectedSlotValue);
+                closeModal();
             }
         }
-        
-        // Start the game
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', init);
-        } else {
-            init();
+
+        // Handle cycle day changes
+        async function handleCycleDayChange(dateString, newCycleDay) {
+            console.log(`Changing ${dateString} to day ${newCycleDay}`);
+            
+            const newCustomDays = { ...customCycleDays };
+            newCustomDays[dateString] = newCycleDay;
+            
+            // Recalculate subsequent days
+            const allDates = [];
+            const startDate = new Date(2025, 6, 1); // July 1
+            const endDate = new Date(2026, 2, 31); // March 31
+            let currentDate = new Date(startDate);
+            
+            while (currentDate <= endDate) {
+                if (isSchoolDay(currentDate)) {
+                    const currentDateString = formatDateString(currentDate);
+                    allDates.push({
+                        date: new Date(currentDate),
+                        dateString: currentDateString
+                    });
+                }
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            
+            const changedIndex = allDates.findIndex(item => item.dateString === dateString);
+            
+            if (changedIndex !== -1) {
+                for (let i = changedIndex + 1; i < allDates.length; i++) {
+                    const currentItem = allDates[i];
+                    
+                    let lastNonZeroDay = 0;
+                    for (let j = i - 1; j >= 0; j--) {
+                        const checkItem = allDates[j];
+                        let checkDay;
+                        
+                        if (newCustomDays.hasOwnProperty(checkItem.dateString)) {
+                            checkDay = newCustomDays[checkItem.dateString];
+                        } else if (customCycleDays.hasOwnProperty(checkItem.dateString)) {
+                            checkDay = customCycleDays[checkItem.dateString];
+                        } else {
+                            const july21 = new Date(2025, 6, 21);
+                            const checkDate = checkItem.date;
+                            const compareDate = new Date(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate());
+                            const compareJuly21 = new Date(2025, 6, 21);
+                            
+                            if (compareDate < compareJuly21) {
+                                checkDay = 0;
+                            } else if (checkItem.dateString === '2025-07-21') {
+                                checkDay = 1;
+                            } else {
+                                const schoolDaysSinceStart = getSchoolDaysSince(july21, checkDate);
+                                checkDay = (schoolDaysSinceStart % 7) + 1;
+                            }
+                        }
+                        
+                        if (checkDay !== 0) {
+                            lastNonZeroDay = checkDay;
+                            break;
+                        }
+                    }
+                    
+                    if (lastNonZeroDay === 0) {
+                        newCustomDays[currentItem.dateString] = 1;
+                    } else {
+                        newCustomDays[currentItem.dateString] = lastNonZeroDay === 7 ? 1 : lastNonZeroDay + 1;
+                    }
+                }
+            }
+            
+            // Update local state immediately for instant visual feedback
+            customCycleDays = newCustomDays;
+            renderCalendar();
+            updateTodayBanner();
+            
+            // Save to Firebase (but don't fail if it doesn't work)
+            await saveToFirebase(newCustomDays);
         }
+
+        // Update today's banner
+        function updateTodayBanner() {
+            const todayDay = getEffectiveCycleDay(currentDate);
+            const todayCycle = getCycleNumber(currentDate);
+            
+            document.getElementById('todayBanner').textContent = `TODAY IS DAY ${todayDay}, CYCLE ${todayCycle}`;
+            
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            document.getElementById('todayDate').textContent = currentDate.toLocaleDateString('en-US', options);
+        }
+
+        // Navigation functions
+        function navigateMonth(direction) {
+            if (direction === 'prev') {
+                if (currentMonth === 0) {
+                    currentMonth = 11;
+                    currentYear--;
+                } else {
+                    currentMonth--;
+                }
+            } else {
+                if (currentMonth === 11) {
+                    currentMonth = 0;
+                    currentYear++;
+                } else {
+                    currentMonth++;
+                }
+            }
+            
+            renderCalendar();
+        }
+
+        // Render calendar
+        function renderCalendar() {
+            document.getElementById('monthYear').textContent = `${months[currentMonth]} ${currentYear}`;
+            
+            const daysInMonth = getDaysInMonth(currentMonth, currentYear);
+            const firstDay = getFirstDayOfMonth(currentMonth, currentYear);
+            const grid = document.getElementById('calendarGrid');
+            const todayString = formatDateString(currentDate);
+            
+            grid.innerHTML = '';
+
+            // Empty cells
+            for (let i = 0; i < firstDay; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'h-16 sm:h-20';
+                grid.appendChild(emptyCell);
+            }
+
+            // Days
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(currentYear, currentMonth, day);
+                const dateString = formatDateString(date);
+                const isToday = dateString === todayString;
+                const isPast = isPastDate(date);
+                const isSchoolDayFlag = isSchoolDay(date);
+                const cycleDay = getEffectiveCycleDay(date); // Get cycle day for all dates
+                const cycle = getCycleNumber(date);
+                const isCurrentMonth = currentMonth >= 6 && (currentYear === 2025 || (currentYear === 2026 && currentMonth <= 2));
+
+                let cellBgColor = '';
+                if (isToday) {
+                    cellBgColor = 'bg-yellow-200 border-yellow-400 text-yellow-900 shadow-yellow-100';
+                } else if (isSchoolDayFlag && cycleDay > 0 && cycle > 0 && !isPast) {
+                    const colorIndex = (cycle - 1) % cycleColors.length;
+                    cellBgColor = cycleColors[colorIndex];
+                }
+
+                const dayCell = document.createElement('div');
+                dayCell.className = `h-16 sm:h-20 border border-gray-200 flex flex-col items-center justify-center text-sm sm:text-base relative transition-all duration-200 ${
+                    isToday ? cellBgColor : 
+                    isPast && (isSchoolDayFlag || isWeekend(date)) ? 'bg-gray-100 text-gray-400 opacity-60' :
+                    isSchoolDayFlag ? (cycleDay === 0 ? 'bg-gray-200' : cellBgColor) : 
+                    isWeekend(date) ? 'bg-gray-100 text-gray-500' :
+                    'bg-red-50 text-red-500'
+                } ${!isCurrentMonth ? 'opacity-50' : ''} hover:shadow-md ${
+                    isToday ? 'ring-2 ring-yellow-500' : ''
+                }`;
+
+                // Day number
+                const dayNumber = document.createElement('span');
+                dayNumber.className = 'font-medium mb-1';
+                dayNumber.textContent = day;
+                dayCell.appendChild(dayNumber);
+
+                // Cycle day button - show for all dates except special Day 0 dates that shouldn't be editable
+                if (!isSpecialDay0(dateString)) {
+                    const cycleContainer = document.createElement('div');
+                    cycleContainer.className = 'flex flex-col items-center space-y-1 relative';
+
+                    const cycleButton = document.createElement('div');
+                    cycleButton.className = `cycle-button text-xs font-bold px-2 py-1 rounded-full border-2 transition-all ${
+                        isPast ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:shadow-md'
+                    } ${
+                        cycleDay === 0 ? 'bg-gray-400 text-white border-gray-500' :
+                        isToday ? 'bg-yellow-400 text-white border-yellow-500 shadow-lg' : 
+                        'bg-white border-current shadow-sm'
+                    }`;
+                    cycleButton.textContent = cycleDay === 0 ? '0' : cycleDay;
+
+                    if (!isPast) {
+                        cycleButton.onclick = (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openModal(dateString, cycleDay);
+                        };
+                        
+                        // Add touch event handlers to prevent zoom
+                        let touchStartTime = 0;
+                        
+                        cycleButton.addEventListener('touchstart', (e) => {
+                            touchStartTime = Date.now();
+                        }, { passive: false });
+                        
+                        cycleButton.addEventListener('touchend', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            const touchDuration = Date.now() - touchStartTime;
+                            if (touchDuration < 200) { // Quick tap
+                                openModal(dateString, cycleDay);
+                            }
+                        }, { passive: false });
+                    }
+
+                    cycleContainer.appendChild(cycleButton);
+                    dayCell.appendChild(cycleContainer);
+                } else {
+                    // For special Day 0 dates (like July 18), show non-clickable Day 0
+                    const cycleContainer = document.createElement('div');
+                    cycleContainer.className = 'flex flex-col items-center space-y-1 relative';
+
+                    const cycleDisplay = document.createElement('div');
+                    cycleDisplay.className = 'text-xs font-bold px-2 py-1 rounded-full border-2 bg-purple-400 text-white border-purple-500';
+                    cycleDisplay.textContent = '0';
+
+                    cycleContainer.appendChild(cycleDisplay);
+                    dayCell.appendChild(cycleContainer);
+                }
+
+                // Holiday and school break indicators
+                if (isHoliday(dateString) && !isWeekend(date)) {
+                    const holidayDot = document.createElement('div');
+                    holidayDot.className = 'absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full';
+                    holidayDot.title = 'Public Holiday';
+                    dayCell.appendChild(holidayDot);
+                }
+                
+                if (isSchoolBreak(dateString) && !isWeekend(date)) {
+                    const breakDot = document.createElement('div');
+                    breakDot.className = 'absolute top-1 left-1 w-2 h-2 bg-orange-500 rounded-full';
+                    breakDot.title = 'School Break';
+                    dayCell.appendChild(breakDot);
+                }
+
+                // Special indicator for July 18
+                if (isSpecialDay0(dateString)) {
+                    const specialDot = document.createElement('div');
+                    specialDot.className = 'absolute top-1 right-1 w-2 h-2 bg-purple-500 rounded-full';
+                    specialDot.title = 'Special Day 0';
+                    dayCell.appendChild(specialDot);
+                }
+
+                grid.appendChild(dayCell);
+            }
+
+            // Update navigation buttons - remove artificial limits
+            const prevButton = document.getElementById('prevMonth');
+            const nextButton = document.getElementById('nextMonth');
+            
+            // Allow unlimited navigation but add visual cues for school year range
+            prevButton.disabled = false;
+            nextButton.disabled = false;
+            
+            // Add visual indication if we're outside the main school year
+            const isInSchoolYear = (currentYear === 2025 && currentMonth >= 6) || 
+                                 (currentYear === 2026 && currentMonth <= 2);
+            
+            if (!isInSchoolYear) {
+                document.getElementById('monthYear').style.opacity = '0.6';
+                document.getElementById('monthYear').title = 'Outside main school year (July 2025 - March 2026)';
+            } else {
+                document.getElementById('monthYear').style.opacity = '1';
+                document.getElementById('monthYear').title = '';
+            }
+        }
+
+        // Event listeners
+        document.getElementById('prevMonth').onclick = () => navigateMonth('prev');
+        document.getElementById('nextMonth').onclick = () => navigateMonth('next');
+
+        // Keyboard support for modal
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('modal').classList.contains('hidden')) return;
+            
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                scrollSlot('up');
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                scrollSlot('down');
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                selectCycleDay();
+            } else if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // Initialize
+        function init() {
+            // Set current month to actual current month
+            const today = new Date();
+            currentMonth = today.getMonth();
+            currentYear = today.getFullYear();
+            
+            // Update current date every minute
+            setInterval(() => {
+                currentDate = new Date();
+                updateTodayBanner();
+            }, 60000);
+
+            // Setup Firebase listener
+            setupFirebaseListener();
+            
+            // Initial render
+            updateTodayBanner();
+            renderCalendar();
+            
+            console.log('Calendar initialized successfully!');
+        }
+
+        // Start when page loads
+        window.addEventListener('load', init);
     </script>
 </body>
 </html>
