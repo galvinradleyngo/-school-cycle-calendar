@@ -753,14 +753,15 @@
                     if (doc.exists) {
                         const firebaseData = doc.data() || {};
                         // Only update if the data is actually different to avoid overriding local changes
-                        if (JSON.stringify(customCycleDays) !== JSON.stringify(firebaseData)) {
+                        // But don't override if Firebase data is empty and we have local customizations
+                        if (Object.keys(firebaseData).length > 0 && JSON.stringify(customCycleDays) !== JSON.stringify(firebaseData)) {
                             customCycleDays = firebaseData;
                             renderCalendar();
                             updateTodayBanner();
                         }
                         updateSyncStatus(true);
                     } else {
-                        // Document doesn't exist, create it with current data
+                        // Document doesn't exist, create it with current data only if we have custom data
                         if (Object.keys(customCycleDays).length > 0) {
                             saveToFirebase(customCycleDays);
                         }
@@ -1342,12 +1343,14 @@
                 updateTodayBanner();
             }, 60000);
 
-            // Setup Firebase listener
-            setupFirebaseListener();
-            
-            // Initial render
+            // Initial render first (before Firebase to show correct default)
             updateTodayBanner();
             renderCalendar();
+            
+            // Setup Firebase listener after a small delay to prevent immediate override
+            setTimeout(() => {
+                setupFirebaseListener();
+            }, 1000);
             
             console.log('Calendar initialized successfully!');
         }
